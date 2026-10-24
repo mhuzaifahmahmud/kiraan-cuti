@@ -264,6 +264,8 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   </div>
 
   <p class="foot">Data disimpan dalam pelayar telefon ini sahaja dan tidak dihantar ke mana-mana.</p>
+
+    <button class="btn primary" id="openReport2" type="button" style="width:100%;min-height:52px;font-size:1.05rem">Lihat laporan penuh</button>
   </div>
 
   <section id="reportView" class="stack" hidden>
@@ -668,7 +670,9 @@ function route() {
   if (on) { buildReport(); window.scrollTo(0, 0); } else { reportPushed = false; }
 }
 window.addEventListener("hashchange", route);
-$("openReport").addEventListener("click", function () { reportPushed = true; location.hash = "laporan"; });
+function openReportView() { reportPushed = true; location.hash = "laporan"; }
+$("openReport").addEventListener("click", openReportView);
+$("openReport2").addEventListener("click", openReportView);
 $("backBtn").addEventListener("click", function () { if (reportPushed) history.back(); else location.hash = ""; });
 $("printBtn").addEventListener("click", function () { window.print(); });
 var copyTimer = null;
