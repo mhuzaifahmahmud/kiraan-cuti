@@ -209,6 +209,14 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   .detailwrap { break-before: page; }
   .rt thead th, .rt tr.t th, .rt tr.t td, .rt tr.tot th, .rt tr.tot td, .pair3 > div { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+.notice { background: var(--input-bg); color: var(--ok); border-radius: 8px; padding: 10px 14px; font-size: .92rem; }
+.implist { margin: 0 0 4px; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 6px; }
+.implist .okt { color: var(--ok); }
+.implist .badt { color: var(--bad); }
+.pdfdata { display: none; }
+@media print {
+  .pdfdata { display: block; color: #fff; font: 2px/2px Arial, Helvetica, sans-serif; word-break: break-all; overflow-wrap: anywhere; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none; }
+}
 </style>
 </head>
 <body>
@@ -220,12 +228,13 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   </header>
 
   <div id="editView" class="stack">
+  <div id="notice" class="notice" role="status" hidden></div>
   <div id="example" class="example" hidden>Ini data contoh. Tukar nombor kepada data anda, atau tekan Kosongkan untuk mula semula.</div>
 
   <details class="guide" id="guide">
     <summary>Cara guna (3 langkah)</summary>
     <ol>
-      <li>Isi <b>baki awal</b> daripada rekod cuti terakhir anda.</li>
+      <li>Isi <b>baki awal</b> daripada rekod cuti terakhir anda. Jika anda ada laporan PDF daripada kalkulator ini, tekan <b>Import dari PDF</b> di bahagian bawah.</li>
       <li>Untuk setiap tahun, isi <b>Kelayakan</b>, setiap <b>cuti yang diambil</b> dan <b>GCR</b> (Ganti Cuti Rehat).</li>
       <li>Lihat <b>Baki Cuti Ke Tahun Hadapan</b> di bahagian Keputusan. Tekan <b>Tambah tahun</b> untuk tahun seterusnya.</li>
     </ol>
@@ -270,9 +279,16 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   <div class="actions">
     <button class="btn primary" id="addYear" type="button">Tambah tahun</button>
     <button class="btn" id="delYear" type="button">Buang tahun terakhir</button>
-    <button class="btn" id="loadExample" type="button">Lihat contoh</button>
+    <button class="btn" id="importBtn" type="button">Import dari PDF</button>
     <button class="btn" id="reset" type="button">Kosongkan</button>
   </div>
+  <input type="file" id="pdfFile" accept="application/pdf,.pdf" hidden>
+
+  <section id="importPanel" class="card" hidden aria-live="polite">
+    <h2 id="impTitle"></h2>
+    <div id="impBody"></div>
+    <div class="actions" id="impActions" style="margin-top:12px"></div>
+  </section>
 
   <p class="foot">Data disimpan dalam pelayar telefon ini sahaja dan tidak dihantar ke mana-mana.</p>
 
@@ -341,14 +357,6 @@ function compute(st) {
 /*LOGIC-END*/
 
 var KEY = "kiraan-cuti-v2", OLD_KEY = "kiraan-cuti-v1";
-function exampleState() {
-  return { example: true, touched: true, startYear: 2023, open2: "0", open1: "0", years: [
-    { ent: "42", taken: ["5", "8", "3"], fae: "15" },
-    { ent: "42", taken: ["4", "4", "6", "2"], fae: "15" },
-    { ent: "42", taken: ["10", "7", "3", "5"], fae: "15" },
-    { ent: "42", taken: ["12", "4", "9"], fae: "15" }
-  ]};
-}
 function blankState() {
   return { example: false, touched: false, startYear: new Date().getFullYear(), open2: "", open1: "", years: [{ ent: "", taken: [""], fae: "" }] };
 }
@@ -577,9 +585,6 @@ $("delYear").addEventListener("click", function () {
     openSet[state.years.length - 1] = true; save(); build();
   }
 });
-$("loadExample").addEventListener("click", function () {
-  state = exampleState(); openSet = {}; openSet[state.years.length - 1] = true; save(); build();
-});
 var armed = null;
 function disarm() { clearTimeout(armed); armed = null; var b = $("reset"); b.textContent = "Kosongkan"; b.classList.remove("armed"); }
 $("reset").addEventListener("click", function () {
@@ -623,6 +628,7 @@ function buildReport() {
     h += "<tr><th scope=\"row\">" + r.year + "</th><td>" + fmt(r[5]) + "</td><td>" + fmt(round2(r[3] + r[4])) + "</td><td>" + fmt(r[6]) + "</td><td>" + fmt(r[8]) + "</td><td>" + fmt(r[9]) + "</td><td>" + fmt(r.fc) + "</td><td>" + fmt(r[17]) + "</td><td>" + fmt(r.cf) + "</td></tr>";
   });
   h += "<tr class=\"tot\"><th scope=\"row\">Jumlah</th><td>" + fmt(t.ent) + "</td><td>–</td><td>–</td><td>" + fmt(t.taken) + "</td><td>" + fmt(t.fae) + "</td><td>\u2013</td><td>" + fmt(t.exp) + "</td><td>–</td></tr></tbody></table></div>";
+  h += '<div class="pdfdata" aria-hidden="true">' + makeCode() + "</div>";
   // terperinci
   h += "<div class=\"detailwrap\"><h3>Pengiraan terperinci</h3><div class=\"tscroll\"><table class=\"rt detail\"><thead><tr><th>Perkara</th>";
   res.forEach(function (r) { h += "<th>" + r.year + "</th>"; });
@@ -696,7 +702,133 @@ $("repName").addEventListener("input", function (e) {
   state.name = e.target.value; save();
   var m = document.querySelector("#reportBody .meta");
   if (m) m.textContent = (state.name ? "Nama: " + state.name + " · " : "") + "Disediakan " + reportDate();
+
+  var pd = document.querySelector("#reportBody .pdfdata"); if (pd) pd.textContent = makeCode();
 });
+
+/* ---------- Import / kod tersembunyi dalam PDF ---------- */
+function b64u(str) {
+  var bytes = new TextEncoder().encode(str), bin = "";
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function unb64u(s) {
+  s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+  var bin = atob(s), bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+function fnv8(s) {
+  var h = 0x811c9dc5;
+  for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("00000000" + h.toString(16)).slice(-8);
+}
+function makeCode() {
+  var res = compute(state);
+  var payload = {
+    v: 1, y: state.startYear, o2: state.open2, o1: state.open1, n: state.name || "",
+    r: state.years.map(function (y) { return [y.ent, parseTakenList(y.taken).sum, y.fae]; }),
+    c: res.map(function (r) { return r.cf; })
+  };
+  var b = b64u(JSON.stringify(payload));
+  return "KCDATA1" + b + "." + fnv8(b) + "KCEND";
+}
+function parseCode(text) {
+  var m = /KCDATA1([A-Za-z0-9_-]+)\.([0-9a-f]{8})KCEND/.exec(text.replace(/\s+/g, ""));
+  if (!m) return { err: "nocode" };
+  if (fnv8(m[1]) !== m[2]) return { err: "corrupt" };
+  var p;
+  try { p = JSON.parse(unb64u(m[1])); } catch (e) { return { err: "corrupt" }; }
+  if (!p || p.v !== 1 || !isFinite(p.y) || !Array.isArray(p.r) || !p.r.length || p.r.length > 60) return { err: "corrupt" };
+  var st = {
+    example: false, touched: true, startYear: parseInt(p.y, 10),
+    open2: String(p.o2 == null ? "" : p.o2), open1: String(p.o1 == null ? "" : p.o1),
+    name: String(p.n == null ? "" : p.n).slice(0, 80), years: []
+  };
+  for (var i = 0; i < p.r.length; i++) {
+    var a = p.r[i];
+    if (!Array.isArray(a) || a.length < 3) return { err: "corrupt" };
+    var tk = Number(a[1]);
+    if (!isFinite(tk) || tk < 0) return { err: "corrupt" };
+    st.years.push({ ent: String(a[0]), taken: [tk > 0 ? String(tk) : ""], fae: String(a[2]) });
+  }
+  var res = compute(st), ok = Array.isArray(p.c) && p.c.length === res.length;
+  if (ok) for (var j = 0; j < res.length; j++) if (Math.abs(res[j].cf - Number(p.c[j])) > 0.011) ok = false;
+  return { state: st, res: res, check: ok };
+}
+var pdfjsP = null;
+function loadPdfJs() {
+  if (!pdfjsP) pdfjsP = import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs").then(function (m) {
+    m.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+    return m;
+  }).catch(function (e) { pdfjsP = null; throw e; });
+  return pdfjsP;
+}
+function readPdfText(file) {
+  return Promise.all([loadPdfJs(), file.arrayBuffer()]).then(function (a) {
+    return a[0].getDocument({ data: a[1] }).promise;
+  }).then(function (doc) {
+    var out = [], chain = Promise.resolve();
+    for (let n = 1; n <= doc.numPages; n++) chain = chain.then(function () {
+      return doc.getPage(n).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+        out.push(tc.items.map(function (it) { return it.str; }).join(""));
+      });
+    });
+    return chain.then(function () { return out.join(""); });
+  });
+}
+var pendingImport = null, noticeT = null;
+function showNotice(msg) {
+  var n = $("notice"); n.textContent = msg; n.hidden = false;
+  clearTimeout(noticeT); noticeT = setTimeout(function () { n.hidden = true; }, 6000);
+}
+function closeImport() { $("importPanel").hidden = true; pendingImport = null; }
+function showImportPanel(title, bodyHtml, buttons) {
+  $("impTitle").textContent = title; $("impBody").innerHTML = bodyHtml;
+  var box = $("impActions"); box.innerHTML = "";
+  buttons.forEach(function (b) {
+    var el = document.createElement("button"); el.type = "button";
+    el.className = "btn" + (b.primary ? " primary" : ""); el.textContent = b.label;
+    el.addEventListener("click", b.fn); box.appendChild(el);
+  });
+  $("importPanel").hidden = false;
+  try { $("importPanel").scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+}
+function importError(msg) { showImportPanel("Import tidak berjaya", '<p class="note err">' + msg + "</p>", [{ label: "Tutup", fn: closeImport }]); }
+$("importBtn").addEventListener("click", function () { $("pdfFile").value = ""; $("pdfFile").click(); });
+$("pdfFile").addEventListener("change", function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  showImportPanel("Membaca PDF…", "<p>Sila tunggu sebentar.</p>", []);
+  readPdfText(f).then(function (text) {
+    var p = parseCode(text);
+    if (p.err === "nocode") return importError("Kod import tidak ditemui dalam PDF ini. Hanya PDF laporan yang dijana oleh versi kalkulator ini (atau yang lebih baru) boleh diimport. Jana semula laporan daripada data anda, atau isi data secara manual.");
+    if (p.err) return importError("Data dalam PDF ini rosak atau tidak lengkap, jadi tidak boleh diimport.");
+    pendingImport = p;
+    var last = p.res[p.res.length - 1], s = p.state;
+    var h = '<ul class="implist">' +
+      "<li>Fail: <b>" + esc(f.name) + "</b></li>" +
+      (s.name ? "<li>Nama: <b>" + esc(s.name) + "</b></li>" : "") +
+      "<li>Tahun: <b>" + s.startYear + " – " + (s.startYear + s.years.length - 1) + "</b> (" + s.years.length + " tahun)</li>" +
+      "<li>Baki cuti ke tahun hadapan (" + last.year + "): <b>" + fmt(last.cf) + " hari</b></li>" +
+      (p.check ? '<li class="okt">Semakan baki setiap tahun sepadan dengan laporan ✓</li>' : '<li class="badt">Baki yang dikira semula tidak sepadan dengan laporan. Semak data selepas import.</li>') +
+      "</ul>" +
+      '<p class="note">Senarai cuti diambil tidak disimpan dalam PDF. Setiap tahun akan menggunakan satu nilai Jumlah Cuti Diambil.</p>' +
+      '<p class="note err">Data yang ada sekarang akan diganti.</p>';
+    showImportPanel("Import dari PDF", h, [
+      { label: "Import dan ganti data", primary: true, fn: doImport },
+      { label: "Batal", fn: closeImport }
+    ]);
+  }).catch(function () {
+    importError("PDF tidak dapat dibaca. Pastikan ada sambungan internet (diperlukan untuk memuatkan pembaca PDF) dan fail itu ialah PDF laporan yang sah.");
+  });
+});
+function doImport() {
+  if (!pendingImport) return;
+  state = pendingImport.state; openSet = {}; openSet[state.years.length - 1] = true;
+  closeImport(); save(); build();
+  window.scrollTo(0, 0);
+  showNotice("Data berjaya diimport (" + state.years.length + " tahun).");
+}
 
 build();
 route();
