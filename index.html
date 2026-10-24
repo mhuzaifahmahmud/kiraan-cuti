@@ -195,6 +195,9 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   .rt tbody th, .rt thead th:first-child { position: static; }
   .rt th, .rt td { padding: 4px 6px; }
 }
+.fcnote { margin: 4px 0 0; font-size: .88rem; color: var(--muted); }
+.save { margin: 8px 0 0; font-size: .85rem; color: var(--ok); }
+.save.bad { color: var(--bad); background: var(--bad-bg); border-radius: 8px; padding: 8px 12px; }
 </style>
 </head>
 <body>
@@ -202,6 +205,7 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   <header>
     <h1>Kiraan Cuti</h1>
     <p class="sub">Kira baki cuti tahunan anda. Cuti yang lama digunakan dahulu, dan baki dibawa ke tahun berikutnya selama 2 tahun.</p>
+    <p class="save" id="saveStatus" aria-live="polite"></p>
   </header>
 
   <div id="editView" class="stack">
@@ -296,13 +300,14 @@ function parseTakenList(list) {
   return { sum: round2(sum), badIdx: badIdx };
 }
 function compute(st) {
-  var p2 = parseNum(st.open2).v, p1 = parseNum(st.open1).v, out = [];
+  var p2 = parseNum(st.open2).v, p1 = parseNum(st.open1).v, out = [], faeSum = 0;
   for (var i = 0; i < st.years.length; i++) {
     var y = st.years[i], ent = parseNum(y.ent), fae = parseNum(y.fae), tk = parseTakenList(y.taken);
     var r = { year: st.startYear + i, bad: { ent: !ent.ok, fae: !fae.ok, taken: tk.badIdx } };
     r[3] = p2; r[4] = p1; r[5] = ent.v;
     r[6] = round2(r[5] + r[4] + r[3]);
     r[8] = tk.sum; r[9] = fae.v;
+    faeSum = round2(faeSum + r[9]); r.fc = faeSum;
     r[10] = round2(r[8] + r[9]);
     var need = r[10];
     r[12] = Math.min(r[3], need); need = round2(need - r[12]);
@@ -347,13 +352,31 @@ function normalize(st) {
   });
   return st;
 }
-var state = null;
+var state = null, restored = false, saveOk = true, lastSaved = null;
 try {
   var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
   state = raw ? normalize(JSON.parse(raw)) : null;
+  restored = !!state;
 } catch (e) { state = null; }
 if (!state) state = blankState();
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+function showSaved() {
+  var el = document.getElementById("saveStatus"); if (!el) return;
+  if (!saveOk) { el.className = "save bad"; el.textContent = "Simpan automatik tidak berfungsi. Pelayar mungkin dalam mod peribadi (private) atau menyekat penyimpanan. Data akan hilang jika halaman ditutup."; }
+  else if (lastSaved) { el.className = "save"; el.textContent = "Disimpan automatik \u2713 " + pad2(lastSaved.getHours()) + ":" + pad2(lastSaved.getMinutes()); }
+  else if (restored) { el.className = "save"; el.textContent = "Data anda dipulihkan daripada simpanan automatik. \u2713"; }
+  else { el.className = "save"; el.textContent = "Data anda disimpan automatik dalam telefon ini."; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); saveOk = true; lastSaved = new Date(); }
+  catch (e) { saveOk = false; }
+  showSaved();
+}
+window.addEventListener("pagehide", function () { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} });
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "hidden") { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+});
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
 
 var openSet = {};
 openSet[state.years.length - 1] = true;
@@ -369,7 +392,7 @@ var HELP = {
 };
 var FULL = [
   [3, "Baki cuti 2 tahun lepas"], [4, "Baki cuti 1 tahun lepas"], [5, "Kelayakan cuti tahunan"],
-  [6, "Jumlah cuti tahun semasa", "t"], [8, "Jumlah cuti diambil"], [9, "Faedah ganti cuti rehat"],
+  [6, "Jumlah cuti tahun semasa", "t"], [8, "Jumlah cuti diambil"], [9, "Faedah ganti cuti rehat"], ["fc", "Faedah terkumpul sehingga tahun ini"],
   [10, "Jumlah cuti digunakan", "t"], [12, "Cuti 2 tahun lepas digunakan"], [13, "Cuti 1 tahun lepas digunakan"],
   [14, "Cuti tahun semasa digunakan"], [15, "Semakan (12+13+14 = 10)"],
   [17, "Baki stok 2 tahun lepas (luput hujung tahun)", "e"], [18, "Baki stok 1 tahun lepas"],
@@ -387,7 +410,7 @@ function yearCard(y, i, year) {
   });
   var full = "";
   FULL.forEach(function (f) {
-    full += '<tr class="' + (f[2] || "") + '"><th scope="row"><span class="rn">' + f[0] + '</span>' + f[1] + '</th><td data-r="' + f[0] + '" data-i="' + i + '"></td></tr>';
+    full += '<tr class="' + (f[2] || "") + '"><th scope="row"><span class="rn">' + (f[0] === "fc" ? "" : f[0]) + '</span>' + f[1] + '</th><td data-r="' + f[0] + '" data-i="' + i + '"></td></tr>';
   });
   return '<details class="year" data-i="' + i + '"' + (openSet[i] ? " open" : "") + '>' +
     '<summary><span class="yname">' + year + '</span><span class="chip" data-chip="' + i + '"></span></summary>' +
@@ -401,7 +424,7 @@ function yearCard(y, i, year) {
         '<button type="button" class="btn addbtn" data-add="' + i + '">+ Tambah cuti</button></div>' +
       '<div class="field"><div class="lbl"><label for="fae-' + i + '">Faedah ganti cuti rehat</label>' + helpBtn("h-fae-" + i) + '</div>' +
         '<p class="helptext" id="h-fae-' + i + '" hidden>' + HELP.fae + '</p>' +
-        '<div class="inwrap"><input class="f" id="fae-' + i + '" data-f="fae" data-i="' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="contoh 15" value="' + esc(y.fae) + '"><span class="u">hari</span></div></div>' +
+        '<div class="inwrap"><input class="f" id="fae-' + i + '" data-f="fae" data-i="' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="contoh 15" value="' + esc(y.fae) + '"><span class="u">hari</span></div><p class="fcnote" data-fc="' + i + '"></p></div>' +
       '<div class="stats"><div><div class="l">Ada</div><div class="v" data-s="6" data-i="' + i + '"></div></div>' +
         '<div><div class="l">Digunakan</div><div class="v" data-s="10" data-i="' + i + '"></div></div>' +
         '<div><div class="l">Baki</div><div class="v" data-s="20" data-i="' + i + '"></div></div></div>' +
@@ -425,7 +448,7 @@ function build() {
 function refresh() {
   var res = compute(state), last = res.length - 1;
   document.querySelectorAll("td[data-r]").forEach(function (td) {
-    var n = +td.dataset.r, r = res[+td.dataset.i], v = r[n];
+    var n = td.dataset.r === "fc" ? "fc" : +td.dataset.r, r = res[+td.dataset.i], v = r[n];
     td.textContent = fmt(v);
     if (n === 15) {
       var ok = r.excess === 0;
@@ -433,6 +456,7 @@ function refresh() {
       td.classList.toggle("ok", ok); td.classList.toggle("fail", !ok);
     }
   });
+  document.querySelectorAll("[data-fc]").forEach(function (el) { var r = res[+el.dataset.fc]; el.textContent = "Jumlah faedah terkumpul sehingga " + r.year + ": " + fmt(r.fc) + " hari"; });
   document.querySelectorAll("[data-s]").forEach(function (el) { el.textContent = fmt(res[+el.dataset.i][+el.dataset.s]); });
   var warns = [];
   res.forEach(function (r, i) {
@@ -578,20 +602,21 @@ function buildReport() {
   reportProblems(res).forEach(function (m) { h += '<div class="rwarn">' + esc(m) + "</div>"; });
   h += '<div class="pair3"><div><div class="pl">Jumlah baki cuti hujung ' + L.year + '</div><div class="pv">' + fmt(L[20]) + "<small>hari</small></div></div>" +
        '<div class="exp"><div class="pl">Luput hujung ' + L.year + '</div><div class="pv">' + fmt(L[17]) + "<small>hari</small></div></div>" +
-       '<div><div class="pl">Dibawa ke ' + (L.year + 1) + '</div><div class="pv">' + fmt(carry) + "<small>hari</small></div></div></div>";
+       '<div><div class="pl">Dibawa ke ' + (L.year + 1) + '</div><div class="pv">' + fmt(carry) + "<small>hari</small></div></div>" +
+       '<div><div class="pl">Faedah ganti cuti rehat terkumpul sehingga ' + L.year + '</div><div class="pv">' + fmt(L.fc) + "<small>hari</small></div></div></div>";
   // ringkasan setiap tahun
-  h += "<h3>Ringkasan setiap tahun</h3><div class=\"tscroll\"><table class=\"rt\"><thead><tr><th>Tahun</th><th>Kelayakan</th><th>Dibawa masuk</th><th>Ada</th><th>Diambil</th><th>Faedah</th><th>Digunakan</th><th>Luput</th><th>Baki</th></tr></thead><tbody>";
+  h += "<h3>Ringkasan setiap tahun</h3><div class=\"tscroll\"><table class=\"rt\"><thead><tr><th>Tahun</th><th>Kelayakan</th><th>Dibawa masuk</th><th>Ada</th><th>Diambil</th><th>Faedah</th><th>Faedah terkumpul</th><th>Digunakan</th><th>Luput</th><th>Baki</th></tr></thead><tbody>";
   res.forEach(function (r) {
-    h += "<tr><th scope=\"row\">" + r.year + "</th><td>" + fmt(r[5]) + "</td><td>" + fmt(round2(r[3] + r[4])) + "</td><td>" + fmt(r[6]) + "</td><td>" + fmt(r[8]) + "</td><td>" + fmt(r[9]) + "</td><td>" + fmt(r[10]) + "</td><td>" + fmt(r[17]) + "</td><td>" + fmt(r[20]) + "</td></tr>";
+    h += "<tr><th scope=\"row\">" + r.year + "</th><td>" + fmt(r[5]) + "</td><td>" + fmt(round2(r[3] + r[4])) + "</td><td>" + fmt(r[6]) + "</td><td>" + fmt(r[8]) + "</td><td>" + fmt(r[9]) + "</td><td>" + fmt(r.fc) + "</td><td>" + fmt(r[10]) + "</td><td>" + fmt(r[17]) + "</td><td>" + fmt(r[20]) + "</td></tr>";
   });
-  h += "<tr class=\"tot\"><th scope=\"row\">Jumlah</th><td>" + fmt(t.ent) + "</td><td>–</td><td>–</td><td>" + fmt(t.taken) + "</td><td>" + fmt(t.fae) + "</td><td>" + fmt(t.used) + "</td><td>" + fmt(t.exp) + "</td><td>–</td></tr></tbody></table></div>";
+  h += "<tr class=\"tot\"><th scope=\"row\">Jumlah</th><td>" + fmt(t.ent) + "</td><td>–</td><td>–</td><td>" + fmt(t.taken) + "</td><td>" + fmt(t.fae) + "</td><td>\u2013</td><td>" + fmt(t.used) + "</td><td>" + fmt(t.exp) + "</td><td>–</td></tr></tbody></table></div>";
   // terperinci
   h += "<h3>Pengiraan terperinci</h3><div class=\"tscroll\"><table class=\"rt detail\"><thead><tr><th>Perkara</th>";
   res.forEach(function (r) { h += "<th>" + r.year + "</th>"; });
   h += "</tr></thead><tbody>";
   FULL.forEach(function (f) {
     var n = f[0];
-    h += "<tr class=\"" + (f[2] || "") + "\"><th scope=\"row\"><span class=\"rn\">" + n + "</span>" + f[1] + "</th>";
+    h += "<tr class=\"" + (f[2] || "") + "\"><th scope=\"row\"><span class=\"rn\">" + (n === "fc" ? "" : n) + "</span>" + f[1] + "</th>";
     res.forEach(function (r) {
       if (n === 15) { var ok = r.excess === 0; h += "<td class=\"" + (ok ? "ok" : "fail") + "\">" + fmt(r[15]) + (ok ? " ✓" : " ✗") + "</td>"; }
       else h += "<td>" + fmt(r[n]) + "</td>";
@@ -616,10 +641,11 @@ function reportText() {
   o.push("Tarikh: " + reportDate(), "");
   o.push("Jumlah baki cuti hujung " + L.year + ": " + fmt(L[20]) + " hari");
   o.push("Luput hujung " + L.year + ": " + fmt(L[17]) + " hari");
-  o.push("Dibawa ke " + (L.year + 1) + ": " + fmt(carry) + " hari", "", "Setiap tahun:");
+  o.push("Dibawa ke " + (L.year + 1) + ": " + fmt(carry) + " hari");
+  o.push("Faedah ganti cuti rehat terkumpul sehingga " + L.year + ": " + fmt(L.fc) + " hari", "", "Setiap tahun:");
   res.forEach(function (r) {
     o.push(r.year + ": kelayakan " + fmt(r[5]) + ", dibawa masuk " + fmt(round2(r[3] + r[4])) + ", ada " + fmt(r[6]) +
-      ", diambil " + fmt(r[8]) + " + faedah " + fmt(r[9]) + " = digunakan " + fmt(r[10]) + ", luput " + fmt(r[17]) + ", baki " + fmt(r[20]));
+      ", diambil " + fmt(r[8]) + " + faedah " + fmt(r[9]) + " (terkumpul " + fmt(r.fc) + ") = digunakan " + fmt(r[10]) + ", luput " + fmt(r[17]) + ", baki " + fmt(r[20]));
   });
   o.push("", "Jumlah " + range + ": diambil " + fmt(t.taken) + ", faedah " + fmt(t.fae) + ", digunakan " + fmt(t.used) + ", luput " + fmt(t.exp));
   reportProblems(res).forEach(function (m) { o.push("PERHATIAN " + m); });
@@ -661,6 +687,7 @@ $("repName").addEventListener("input", function (e) {
 
 build();
 route();
+showSaved();
 </script>
 </body>
 </html>
