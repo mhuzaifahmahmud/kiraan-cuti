@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: one column page. Summary on top, then the leave table laid out like the Excel sheet (rows = items, columns = years). */
+/* Layout: one phone-first column. Guide, opening balances, one card per year, then the total answer. Full workings stay behind a button on each year. */
 :root {
   --bg: #F2F4F6;
   --surface: #FFFFFF;
@@ -41,161 +41,265 @@
   --bad: #F2877E; --bad-bg: #3A1D1B; --expire: #E8B659; --expire-bg: #2E2713;
   color-scheme: dark;
 }
+html { -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
 * { box-sizing: border-box; }
 body {
-  background: var(--bg); color: var(--fg); font-family: var(--font-body);
-  font-size: 15px; line-height: 1.5;
-  padding-block: 28px 48px;
+  margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 16px; line-height: 1.5;
+  padding-block: calc(24px + env(safe-area-inset-top, 0px)) calc(48px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-h1 { font-family: var(--font-head); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; letter-spacing: .01em; text-wrap: balance; }
-.sub { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-family: var(--font-head); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-head); font-weight: 600; font-size: 1.15rem; margin: 0 0 12px; }
+.sub { margin: 6px 0 0; color: var(--muted); max-width: 55ch; }
 button { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .btn {
-  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
-  padding: 8px 12px; cursor: pointer; min-height: 40px;
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 14px; cursor: pointer; min-height: 46px;
 }
 .btn:hover:not(:disabled) { border-color: var(--accent); }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 500; }
+.btn.armed { border-color: var(--bad); color: var(--bad); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
-.btn.danger-armed { border-color: var(--bad); color: var(--bad); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
 
-.example {
-  background: var(--expire-bg); color: var(--expire); border-radius: 6px; padding: 10px 14px; font-size: .9rem;
-}
-.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
-.tile .k { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.tile .v { font-family: var(--font-num); font-size: 2.1rem; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.tile .v small { font-size: .9rem; color: var(--muted); font-family: var(--font-body); margin-left: 4px; }
-.tile.expire { background: var(--expire-bg); border-color: transparent; }
-.tile.expire .k, .tile.expire .v, .tile.expire .v small { color: var(--expire); }
-.tile .n { font-size: .82rem; color: var(--muted); margin-top: 2px; }
-.tile.expire .n { color: var(--expire); }
+.example { background: var(--expire-bg); color: var(--expire); border-radius: 8px; padding: 10px 14px; font-size: .92rem; }
+details.guide { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0 16px; }
+details.guide > summary { padding: 14px 0; }
+details.guide ol { margin: 0 0 14px; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 8px; }
+summary { cursor: pointer; font-weight: 500; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "\25BE"; float: right; color: var(--muted); transition: transform .15s; }
+details[open] > summary::after { transform: rotate(180deg); }
 
-.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.bar .grow { flex: 1 1 auto; }
-.yr { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .9rem; }
-.yr input { width: 5.2rem; }
-
+/* answer */
+.answer .big { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.answer .k { color: var(--muted); font-size: .9rem; width: 100%; }
+.answer .num { font-family: var(--font-num); font-size: 2.6rem; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.answer .unit { color: var(--muted); }
+.answer .text { margin: 8px 0 0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.pair > div { border-radius: 8px; padding: 10px 12px; background: var(--input-bg); min-width: 0; }
+.pair .exp { background: var(--expire-bg); color: var(--expire); }
+.pair .l { font-size: .8rem; color: inherit; opacity: .85; }
+.pair .v { font-family: var(--font-num); font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .warns { display: flex; flex-direction: column; gap: 6px; }
-.warn { background: var(--bad-bg); color: var(--bad); border-radius: 6px; padding: 8px 12px; font-size: .9rem; }
+.warn { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: .92rem; }
 
-.tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; }
-th, td { padding: 0; border-bottom: 1px solid var(--line); text-align: right; height: 42px; }
-tr:last-child th, tr:last-child td { border-bottom: 0; }
-thead th { font-family: var(--font-num); font-weight: 500; background: var(--surface); height: 44px; padding: 0 10px; }
-thead th.corner, th.rl {
-  position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left;
-  min-width: 11.5rem; max-width: 11.5rem; padding: 4px 12px; border-right: 1px solid var(--line);
+/* fields */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field + .field { margin-top: 16px; }
+.lbl { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.lbl .sum { margin-left: auto; font-weight: 400; color: var(--muted); font-size: .88rem; font-family: var(--font-num); }
+.help {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted); font-size: .8rem; cursor: pointer; padding: 0;
 }
-th.rl { font-weight: 400; font-size: .86rem; line-height: 1.25; }
-th.rl .rn { font-family: var(--font-num); font-size: .72rem; color: var(--muted); margin-right: 6px; }
-th.rl.manual { font-weight: 600; }
-td { min-width: 6rem; padding: 0 10px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: .95rem; }
-td.in { padding: 4px 6px; background: var(--input-bg); }
-td.in input {
-  width: 100%; min-width: 5rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line);
-  border-radius: 4px; padding: 6px 8px; text-align: right; font: inherit; height: 34px;
+.help[aria-expanded="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.helptext { margin: 0; font-size: .9rem; color: var(--fg); background: var(--input-bg); border-radius: 8px; padding: 10px 12px; }
+.inwrap { display: flex; align-items: center; gap: 8px; }
+.inwrap .u { color: var(--muted); flex: none; }
+input.f {
+  width: 100%; min-width: 0; height: 48px; font-size: 16px; font-family: var(--font-num);
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px;
+  font-variant-numeric: tabular-nums;
 }
-td.in input:focus { border-color: var(--accent); }
-td.in input.bad { border-color: var(--bad); color: var(--bad); }
-td.zero { color: var(--muted); }
-tr.total th.rl, tr.total td { font-weight: 600; background: var(--input-bg); }
-tr.total th.rl { background: var(--input-bg); }
-tr.expire th.rl, tr.expire td { color: var(--expire); }
-tr.check td.ok { color: var(--ok); }
-tr.check td.fail { color: var(--bad); font-weight: 600; }
-tr.sep th, tr.sep td { border-top: 2px solid var(--line); }
-td.last, thead th.last { box-shadow: inset 0 3px 0 var(--accent); }
+input.f:focus { border-color: var(--accent); }
+input.f.bad { border-color: var(--bad); color: var(--bad); }
+.tkrow { display: flex; align-items: center; gap: 8px; }
+.tkrow + .tkrow { margin-top: 8px; }
+.tkn { flex: none; width: 4.6rem; color: var(--muted); font-size: .9rem; }
+.x { flex: none; width: 44px; height: 44px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 8px; font-size: 1.2rem; cursor: pointer; }
+.x:hover { color: var(--bad); border-color: var(--bad); }
+.addbtn { align-self: flex-start; margin-top: 8px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 .field + .field { margin-top: 0; }
+.row2 .field { min-width: 0; }
 
-details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
-summary { cursor: pointer; font-weight: 500; }
-details ol { margin: 10px 0 2px; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
-.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
-.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
-@media (max-width: 520px) {
-  h1 { font-size: 1.7rem; }
-  thead th.corner, th.rl { min-width: 8.6rem; max-width: 8.6rem; padding: 4px 8px; }
-  th.rl .rn { display: none; }
+/* year cards */
+details.year { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.year > summary { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+details.year > summary::after { margin-left: auto; float: none; }
+.yname { font-family: var(--font-num); font-weight: 500; font-size: 1.15rem; }
+.chip { font-size: .85rem; background: var(--input-bg); border-radius: 999px; padding: 2px 10px; font-variant-numeric: tabular-nums; }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.ybody { padding: 4px 16px 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+.stats > div { background: var(--input-bg); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.stats .l { font-size: .75rem; color: var(--muted); }
+.stats .v { font-family: var(--font-num); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.note { margin: 10px 0 0; font-size: .92rem; }
+.note.exp { color: var(--expire); background: var(--expire-bg); border-radius: 8px; padding: 8px 12px; }
+.note.err { color: var(--bad); background: var(--bad-bg); border-radius: 8px; padding: 8px 12px; }
+details.full { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 8px; }
+details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0; }
+.ft { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.ft th, .ft td { padding: 7px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.ft td { text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
+.ft th { font-weight: 400; }
+.ft .rn { font-family: var(--font-num); color: var(--muted); font-size: .75rem; margin-right: 6px; }
+.ft tr.t th, .ft tr.t td { font-weight: 600; }
+.ft tr.e th, .ft tr.e td { color: var(--expire); }
+.ft td.ok { color: var(--ok); }
+.ft td.fail { color: var(--bad); font-weight: 600; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions .btn { flex: 1 1 auto; }
+.foot { color: var(--muted); font-size: .85rem; }
+@media (max-width: 380px) { h1 { font-size: 1.7rem; } .answer .num { font-size: 2.2rem; } }
+@media (prefers-reduced-motion: reduce) { summary::after { transition: none; } }
+
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.printonly { display: none; }
+.report { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.rtitle { font-family: var(--font-head); font-weight: 600; font-size: 1.5rem; line-height: 1.15; margin: 0; text-wrap: balance; }
+.report h3 { font-family: var(--font-head); font-weight: 600; font-size: 1.05rem; margin: 6px 0 0; }
+.meta { margin: 0; color: var(--muted); font-size: .88rem; }
+.pair3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.pair3 > div { background: var(--input-bg); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.pair3 > div.exp { background: var(--expire-bg); color: var(--expire); }
+.pair3 .pl { font-size: .78rem; opacity: .9; }
+.pair3 .pv { font-family: var(--font-num); font-size: 1.6rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.pair3 .pv small { font-size: .8rem; font-family: var(--font-body); opacity: .8; margin-left: 4px; }
+.tscroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.rt { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; font-size: .9rem; }
+.rt th, .rt td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rt td { font-family: var(--font-num); }
+.rt thead th { background: var(--input-bg); font-weight: 600; }
+.rt tbody th { text-align: left; font-weight: 400; position: sticky; left: 0; background: var(--surface); border-right: 1px solid var(--line); }
+.rt thead th:first-child { text-align: left; position: sticky; left: 0; background: var(--input-bg); border-right: 1px solid var(--line); }
+.rt.detail tbody th { white-space: normal; min-width: 11rem; }
+.rt .rn { font-family: var(--font-num); color: var(--muted); font-size: .72rem; margin-right: 6px; }
+.rt tr:last-child th, .rt tr:last-child td { border-bottom: 0; }
+.rt tr.t th, .rt tr.t td { font-weight: 600; background: var(--input-bg); }
+.rt tr.e th, .rt tr.e td { color: var(--expire); }
+.rt tr.tot th, .rt tr.tot td { font-weight: 600; background: var(--input-bg); }
+.rt td.ok { color: var(--ok); }
+.rt td.fail { color: var(--bad); font-weight: 600; }
+.rt td.sm { font-size: .8rem; color: var(--muted); }
+.rwarn { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 8px 12px; font-size: .9rem; }
+@page { size: A4 landscape; margin: 12mm; }
+@media print {
+  :root:root:root { --bg:#fff; --surface:#fff; --fg:#000; --muted:#333; --line:#999; --accent:#000; --input-bg:#eee; --expire:#000; --expire-bg:#eee; --bad:#900; --bad-bg:#fff; --ok:#060; color-scheme: light; }
+  body { padding: 0; font-size: 11pt; }
+  body header, .noprint { display: none !important; }
+  .printonly { display: block; }
+  .report { border: 0; padding: 0; }
+  .tscroll { overflow: visible; border-color: #999; }
+  .rt { min-width: 0; font-size: 9pt; }
+  .rt tbody th, .rt thead th:first-child { position: static; }
+  .rt th, .rt td { padding: 4px 6px; }
 }
-@media (prefers-reduced-motion: no-preference) { .btn { transition: border-color .15s; } }
-html{-webkit-text-size-adjust:100%}
-body{margin:0}
-[hidden]{display:none!important}
 </style>
-
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>Kiraan Cuti</h1>
-    <p class="sub">Kira baki cuti tahunan. Cuti yang lama digunakan dahulu, dan baki dibawa ke tahun berikutnya selama 2 tahun.</p>
+    <p class="sub">Kira baki cuti tahunan anda. Cuti yang lama digunakan dahulu, dan baki dibawa ke tahun berikutnya selama 2 tahun.</p>
   </header>
 
-  <div id="example" class="example" hidden>Ini data contoh. Tukar nilai dalam kotak biru, atau tekan Kosongkan untuk mula dengan data anda.</div>
+  <div id="editView" class="stack">
+  <div id="example" class="example" hidden>Ini data contoh. Tukar nombor kepada data anda, atau tekan Kosongkan untuk mula semula.</div>
 
-  <section class="summary" id="summary" aria-live="polite"></section>
+  <details class="guide" id="guide">
+    <summary>Cara guna (3 langkah)</summary>
+    <ol>
+      <li>Isi <b>baki awal</b> daripada rekod cuti terakhir anda.</li>
+      <li>Untuk setiap tahun, isi <b>kelayakan</b>, setiap <b>cuti yang diambil</b> dan <b>faedah ganti cuti rehat</b>.</li>
+      <li>Lihat jumlah baki cuti anda di bahagian Keputusan. Tekan <b>Tambah tahun</b> untuk tahun seterusnya.</li>
+    </ol>
+  </details>
 
-  <section class="bar">
-    <label class="yr" for="startYear">Tahun mula <input class="btn" id="startYear" type="number" inputmode="numeric" min="1990" max="2100"></label>
-    <span class="grow"></span>
-    <button class="btn primary" id="addYear" type="button">Tambah tahun</button>
-    <button class="btn" id="delYear" type="button">Buang tahun terakhir</button>
-    <button class="btn" id="loadExample" type="button">Contoh</button>
-    <button class="btn" id="reset" type="button">Kosongkan</button>
+  <section class="card answer" aria-live="polite">
+    <h2>Keputusan</h2>
+    <div class="big"><span class="k" id="sumK"></span><span class="num" id="sumNum">0</span><span class="unit">hari</span></div>
+    <p class="text" id="sumText"></p>
+    <div class="pair">
+      <div class="exp"><div class="l" id="sumExpL">Luput hujung tahun</div><div class="v" id="sumExp">0</div></div>
+      <div><div class="l" id="sumCarryL">Dibawa ke tahun depan</div><div class="v" id="sumCarry">0</div></div>
+    </div>
+    <button class="btn primary" id="openReport" type="button" style="margin-top:14px;width:100%">Lihat laporan penuh</button>
   </section>
 
   <div class="warns" id="warns" role="status"></div>
 
-  <div class="tablebox"><table id="tbl"></table></div>
+  <section class="card">
+    <h2>Baki awal</h2>
+    <div class="field">
+      <div class="lbl"><label for="startYear">Mula kira dari tahun</label><button type="button" class="help" data-h="h-start" aria-expanded="false" aria-label="Penerangan">?</button></div>
+      <p class="helptext" id="h-start" hidden>Tahun pertama yang anda mahu kira. Baki awal di bawah ialah baki pada permulaan tahun ini.</p>
+      <div class="inwrap"><input class="f" id="startYear" type="text" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <div class="row2" style="margin-top:16px">
+      <div class="field">
+        <div class="lbl"><label for="open2">Baki 2 tahun lepas</label><button type="button" class="help" data-h="h-open2" aria-expanded="false" aria-label="Penerangan">?</button></div>
+        <div class="inwrap"><input class="f" id="open2" data-open="open2" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span class="u">hari</span></div>
+      </div>
+      <div class="field">
+        <div class="lbl"><label for="open1">Baki tahun lepas</label><button type="button" class="help" data-h="h-open1" aria-expanded="false" aria-label="Penerangan">?</button></div>
+        <div class="inwrap"><input class="f" id="open1" data-open="open1" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span class="u">hari</span></div>
+      </div>
+    </div>
+    <p class="helptext" id="h-open2" hidden style="margin-top:10px">Baki cuti yang masih ada daripada dua tahun lepas. Jika tidak digunakan pada tahun ini, ia akan luput.</p>
+    <p class="helptext" id="h-open1" hidden style="margin-top:10px">Baki cuti yang masih ada daripada tahun lepas. Ambil daripada rekod cuti rasmi anda. Isi 0 jika tiada atau jika anda baru bermula.</p>
+  </section>
 
-  <div class="legend">
-    <span><i style="background:var(--input-bg)"></i>Isi sendiri</span>
-    <span><i style="background:var(--surface)"></i>Dikira automatik</span>
-    <span>Cuti diambil: tulis seperti 4+4+3 (setiap cuti satu nombor)</span>
+  <section id="years" style="display:flex;flex-direction:column;gap:12px"></section>
+
+  <div class="actions">
+    <button class="btn primary" id="addYear" type="button">Tambah tahun</button>
+    <button class="btn" id="delYear" type="button">Buang tahun terakhir</button>
+    <button class="btn" id="loadExample" type="button">Lihat contoh</button>
+    <button class="btn" id="reset" type="button">Kosongkan</button>
   </div>
 
-  <details>
-    <summary>Cara kiraan</summary>
-    <ol>
-      <li>Jumlah cuti tahun semasa = kelayakan tahun ini + baki tahun lepas + baki 2 tahun lepas.</li>
-      <li>Jumlah cuti digunakan = cuti diambil + faedah ganti cuti rehat.</li>
-      <li>Cuti digunakan ditolak ikut urutan: baki 2 tahun lepas sehingga kosong, kemudian baki tahun lepas sehingga kosong, dan akhir sekali kelayakan tahun semasa.</li>
-      <li>Baki stok 2 tahun lepas yang masih ada akan luput pada hujung tahun. Baki tahun lepas menjadi baki 2 tahun lepas, dan baki tahun semasa menjadi baki tahun lepas pada tahun berikutnya.</li>
-      <li>Baris 15 ialah semakan. Jumlahnya mesti sama dengan baris 10. Jika tidak sama, cuti digunakan melebihi cuti yang ada.</li>
-    </ol>
-  </details>
+  <p class="foot">Data disimpan dalam pelayar telefon ini sahaja dan tidak dihantar ke mana-mana.</p>
+  </div>
+
+  <section id="reportView" class="stack" hidden>
+    <div class="actions noprint">
+      <button class="btn" id="backBtn" type="button">‹ Kembali</button>
+      <button class="btn primary" id="printBtn" type="button">Cetak / Simpan PDF</button>
+      <button class="btn" id="copyBtn" type="button">Salin teks</button>
+    </div>
+    <div class="card noprint">
+      <div class="field">
+        <div class="lbl"><label for="repName">Nama (pilihan, untuk laporan)</label></div>
+        <div class="inwrap"><input class="f" id="repName" type="text" autocomplete="off" placeholder="contoh: Muhammad Huzaifah" style="font-family:var(--font-body)"></div>
+      </div>
+    </div>
+    <article class="report" id="reportBody"></article>
+  </section>
 </div>
 
 <script>
 /*LOGIC-START*/
 function round2(x) { return Math.round(x * 100) / 100; }
-function parseTaken(s) {
-  if (s == null || String(s).trim() === "") return { sum: 0, ok: true };
-  var parts = String(s).split("+"), sum = 0;
-  for (var i = 0; i < parts.length; i++) {
-    var t = parts[i].trim().replace(",", ".");
-    if (!/^\d+(\.\d+)?$/.test(t)) return { sum: 0, ok: false };
-    sum += parseFloat(t);
-  }
-  return { sum: round2(sum), ok: true };
-}
 function parseNum(s) {
   if (s == null || String(s).trim() === "") return { v: 0, ok: true };
   var t = String(s).trim().replace(",", ".");
   if (!/^\d+(\.\d+)?$/.test(t)) return { v: 0, ok: false };
   return { v: parseFloat(t), ok: true };
 }
+function parseTakenList(list) {
+  var sum = 0, badIdx = [];
+  (list || []).forEach(function (s, k) {
+    var p = parseNum(s);
+    if (!p.ok) badIdx.push(k); else sum += p.v;
+  });
+  return { sum: round2(sum), badIdx: badIdx };
+}
 function compute(st) {
   var p2 = parseNum(st.open2).v, p1 = parseNum(st.open1).v, out = [];
   for (var i = 0; i < st.years.length; i++) {
-    var y = st.years[i], ent = parseNum(y.ent), fae = parseNum(y.fae), tk = parseTaken(y.taken);
-    var r = { year: st.startYear + i, bad: { ent: !ent.ok, fae: !fae.ok, taken: !tk.ok } };
+    var y = st.years[i], ent = parseNum(y.ent), fae = parseNum(y.fae), tk = parseTakenList(y.taken);
+    var r = { year: st.startYear + i, bad: { ent: !ent.ok, fae: !fae.ok, taken: tk.badIdx } };
     r[3] = p2; r[4] = p1; r[5] = ent.v;
     r[6] = round2(r[5] + r[4] + r[3]);
     r[8] = tk.sum; r[9] = fae.v;
@@ -217,143 +321,346 @@ function compute(st) {
 }
 /*LOGIC-END*/
 
-var KEY = "kiraan-cuti-v1";
+var KEY = "kiraan-cuti-v2", OLD_KEY = "kiraan-cuti-v1";
 function exampleState() {
-  return { example: true, startYear: 2023, open2: "0", open1: "0", years: [
-    { ent: "42", taken: "5+8+3", fae: "15" },
-    { ent: "42", taken: "4+4+6+2", fae: "15" },
-    { ent: "42", taken: "10+7+3+5", fae: "15" },
-    { ent: "42", taken: "12+4+9", fae: "15" }
+  return { example: true, touched: true, startYear: 2023, open2: "0", open1: "0", years: [
+    { ent: "42", taken: ["5", "8", "3"], fae: "15" },
+    { ent: "42", taken: ["4", "4", "6", "2"], fae: "15" },
+    { ent: "42", taken: ["10", "7", "3", "5"], fae: "15" },
+    { ent: "42", taken: ["12", "4", "9"], fae: "15" }
   ]};
 }
 function blankState() {
-  return { example: false, startYear: new Date().getFullYear(), open2: "0", open1: "0", years: [{ ent: "", taken: "", fae: "" }] };
+  return { example: false, touched: false, startYear: new Date().getFullYear(), open2: "", open1: "", years: [{ ent: "", taken: [""], fae: "" }] };
 }
-var state;
-try { var raw = localStorage.getItem(KEY); state = raw ? JSON.parse(raw) : null; } catch (e) { state = null; }
-if (!state || !Array.isArray(state.years) || !state.years.length) state = exampleState();
+function normalize(st) {
+  if (!st || !Array.isArray(st.years) || !st.years.length) return null;
+  st.startYear = parseInt(st.startYear, 10) || new Date().getFullYear();
+  st.open2 = st.open2 == null ? "" : String(st.open2);
+  st.open1 = st.open1 == null ? "" : String(st.open1);
+  st.name = st.name == null ? "" : String(st.name);
+  st.years.forEach(function (y) {
+    y.ent = y.ent == null ? "" : String(y.ent);
+    y.fae = y.fae == null ? "" : String(y.fae);
+    if (typeof y.taken === "string") y.taken = y.taken.split("+").map(function (s) { return s.trim(); });
+    if (!Array.isArray(y.taken) || !y.taken.length) y.taken = [""];
+  });
+  return st;
+}
+var state = null;
+try {
+  var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
+  state = raw ? normalize(JSON.parse(raw)) : null;
+} catch (e) { state = null; }
+if (!state) state = blankState();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+var openSet = {};
+openSet[state.years.length - 1] = true;
 
 var $ = function (id) { return document.getElementById(id); };
 function fmt(x) { return (Math.round(x * 100) / 100).toString().replace(".", ","); }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 
-var ROWS = [
-  { n: 3,  label: "Baki cuti 2 tahun lepas", kind: "calc" },
-  { n: 4,  label: "Baki cuti 1 tahun lepas", kind: "calc" },
-  { n: 5,  label: "Kelayakan cuti tahunan", kind: "in", f: "ent" },
-  { n: 6,  label: "Jumlah cuti tahun semasa", kind: "calc", cls: "total" },
-  { n: 8,  label: "Jumlah cuti diambil", kind: "in", f: "taken", sep: true },
-  { n: 9,  label: "Faedah ganti cuti rehat", kind: "in", f: "fae" },
-  { n: 10, label: "Jumlah cuti digunakan", kind: "calc", cls: "total" },
-  { n: 12, label: "Cuti 2 tahun lepas digunakan", kind: "calc", sep: true },
-  { n: 13, label: "Cuti 1 tahun lepas digunakan", kind: "calc" },
-  { n: 14, label: "Cuti tahun semasa digunakan", kind: "calc" },
-  { n: 15, label: "Semakan (12+13+14 = 10)", kind: "calc", cls: "check" },
-  { n: 17, label: "Baki stok 2 tahun lepas (luput hujung tahun)", kind: "calc", cls: "expire", sep: true },
-  { n: 18, label: "Baki stok 1 tahun lepas", kind: "calc" },
-  { n: 19, label: "Baki peruntukan tahun semasa", kind: "calc" },
-  { n: 20, label: "Jumlah baki cuti", kind: "calc", cls: "total" }
+var HELP = {
+  ent: "Bilangan hari cuti tahunan yang anda layak untuk tahun ini, contohnya 36 atau 42.",
+  taken: "Masukkan setiap cuti yang anda ambil sebagai satu kotak, contohnya 4 hari, kemudian 3 hari. Tekan Tambah cuti untuk kotak baharu.",
+  fae: "Bilangan hari faedah ganti cuti rehat yang dikira sebagai cuti digunakan pada tahun ini. Isi mengikut rekod anda, atau 0 jika tiada."
+};
+var FULL = [
+  [3, "Baki cuti 2 tahun lepas"], [4, "Baki cuti 1 tahun lepas"], [5, "Kelayakan cuti tahunan"],
+  [6, "Jumlah cuti tahun semasa", "t"], [8, "Jumlah cuti diambil"], [9, "Faedah ganti cuti rehat"],
+  [10, "Jumlah cuti digunakan", "t"], [12, "Cuti 2 tahun lepas digunakan"], [13, "Cuti 1 tahun lepas digunakan"],
+  [14, "Cuti tahun semasa digunakan"], [15, "Semakan (12+13+14 = 10)"],
+  [17, "Baki stok 2 tahun lepas (luput hujung tahun)", "e"], [18, "Baki stok 1 tahun lepas"],
+  [19, "Baki peruntukan tahun semasa"], [20, "Jumlah baki cuti", "t"]
 ];
 
-function build() {
-  var res = compute(state), last = state.years.length - 1;
-  var h = "<thead><tr><th class='corner' scope='col'>Tahun</th>";
-  res.forEach(function (r, i) { h += "<th scope='col' class='" + (i === last ? "last" : "") + "'>" + r.year + "</th>"; });
-  h += "</tr></thead><tbody>";
-  ROWS.forEach(function (row) {
-    var cls = [row.cls || "", row.sep ? "sep" : ""].join(" ");
-    var manual = row.kind === "in";
-    h += "<tr class='" + cls + "'><th scope='row' class='rl" + (manual ? " manual" : "") + "'><span class='rn'>" + row.n + "</span>" + row.label + "</th>";
-    state.years.forEach(function (y, i) {
-      var lc = i === last ? " last" : "";
-      if (manual) {
-        h += "<td class='in" + lc + "'><input id='" + row.f + "-" + i + "' data-f='" + row.f + "' data-i='" + i + "' type='text' inputmode='" + (row.f === "taken" ? "text" : "decimal") + "' autocomplete='off' value='" + esc(y[row.f]) + "' placeholder='" + (row.f === "taken" ? "4+4+3" : row.f === "ent" ? "42" : "15") + "' aria-label='" + row.label + " " + res[i].year + "'></td>";
-      } else if ((row.n === 3 || row.n === 4) && i === 0) {
-        var f = row.n === 3 ? "open2" : "open1";
-        h += "<td class='in" + lc + "'><input id='" + f + "' data-open='" + f + "' type='text' inputmode='decimal' autocomplete='off' value='" + esc(state[f]) + "' aria-label='" + row.label + " (baki awal " + res[0].year + ")'></td>";
-      } else {
-        h += "<td data-r='" + row.n + "' data-i='" + i + "' class='" + lc + "'></td>";
-      }
-    });
-    h += "</tr>";
+function helpBtn(id) { return '<button type="button" class="help" data-h="' + id + '" aria-expanded="false" aria-label="Penerangan">?</button>'; }
+
+function yearCard(y, i, year) {
+  var rows = "";
+  y.taken.forEach(function (v, k) {
+    rows += '<div class="tkrow"><label class="tkn" for="tk-' + i + '-' + k + '">Cuti ' + (k + 1) + '</label>' +
+      '<input class="f" id="tk-' + i + '-' + k + '" data-tk="' + i + '" data-k="' + k + '" type="text" inputmode="decimal" autocomplete="off" placeholder="hari" value="' + esc(v) + '">' +
+      '<button type="button" class="x" data-del="' + i + ',' + k + '" aria-label="Buang cuti ' + (k + 1) + '">×</button></div>';
   });
-  h += "</tbody>";
-  $("tbl").innerHTML = h;
+  var full = "";
+  FULL.forEach(function (f) {
+    full += '<tr class="' + (f[2] || "") + '"><th scope="row"><span class="rn">' + f[0] + '</span>' + f[1] + '</th><td data-r="' + f[0] + '" data-i="' + i + '"></td></tr>';
+  });
+  return '<details class="year" data-i="' + i + '"' + (openSet[i] ? " open" : "") + '>' +
+    '<summary><span class="yname">' + year + '</span><span class="chip" data-chip="' + i + '"></span></summary>' +
+    '<div class="ybody">' +
+      '<div class="field"><div class="lbl"><label for="ent-' + i + '">Kelayakan cuti tahunan</label>' + helpBtn("h-ent-" + i) + '</div>' +
+        '<p class="helptext" id="h-ent-' + i + '" hidden>' + HELP.ent + '</p>' +
+        '<div class="inwrap"><input class="f" id="ent-' + i + '" data-f="ent" data-i="' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="contoh 42" value="' + esc(y.ent) + '"><span class="u">hari</span></div></div>' +
+      '<div class="field"><div class="lbl"><span>Cuti yang diambil</span>' + helpBtn("h-tk-" + i) + '<span class="sum" data-sub="' + i + '"></span></div>' +
+        '<p class="helptext" id="h-tk-' + i + '" hidden>' + HELP.taken + '</p>' +
+        '<div>' + rows + '</div>' +
+        '<button type="button" class="btn addbtn" data-add="' + i + '">+ Tambah cuti</button></div>' +
+      '<div class="field"><div class="lbl"><label for="fae-' + i + '">Faedah ganti cuti rehat</label>' + helpBtn("h-fae-" + i) + '</div>' +
+        '<p class="helptext" id="h-fae-' + i + '" hidden>' + HELP.fae + '</p>' +
+        '<div class="inwrap"><input class="f" id="fae-' + i + '" data-f="fae" data-i="' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="contoh 15" value="' + esc(y.fae) + '"><span class="u">hari</span></div></div>' +
+      '<div class="stats"><div><div class="l">Ada</div><div class="v" data-s="6" data-i="' + i + '"></div></div>' +
+        '<div><div class="l">Digunakan</div><div class="v" data-s="10" data-i="' + i + '"></div></div>' +
+        '<div><div class="l">Baki</div><div class="v" data-s="20" data-i="' + i + '"></div></div></div>' +
+      '<p class="note err" data-over="' + i + '" hidden></p>' +
+      '<p class="note exp" data-exp="' + i + '" hidden></p>' +
+      '<details class="full"><summary>Lihat pengiraan penuh</summary><table class="ft"><tbody>' + full + '</tbody></table></details>' +
+    '</div></details>';
+}
+
+function build() {
+  var h = "";
+  state.years.forEach(function (y, i) { h += yearCard(y, i, state.startYear + i); });
+  $("years").innerHTML = h;
+  $("startYear").value = state.startYear;
+  $("open2").value = state.open2;
+  $("open1").value = state.open1;
+  $("guide").open = !state.touched;
   refresh();
 }
 
 function refresh() {
   var res = compute(state), last = res.length - 1;
   document.querySelectorAll("td[data-r]").forEach(function (td) {
-    var n = +td.dataset.r, i = +td.dataset.i, r = res[i], v = r[n];
+    var n = +td.dataset.r, r = res[+td.dataset.i], v = r[n];
     td.textContent = fmt(v);
-    td.classList.toggle("zero", v === 0 && n !== 20);
     if (n === 15) {
       var ok = r.excess === 0;
       td.textContent = fmt(v) + (ok ? " ✓" : " ✗");
       td.classList.toggle("ok", ok); td.classList.toggle("fail", !ok);
-      td.title = ok ? "Sepadan dengan baris 10" : "Tidak sepadan: lebih " + fmt(r.excess) + " hari";
     }
   });
-  document.querySelectorAll("td.in input[data-i]").forEach(function (inp) {
-    var f = inp.dataset.f, i = +inp.dataset.i;
-    inp.classList.toggle("bad", !!res[i].bad[f]);
+  document.querySelectorAll("[data-s]").forEach(function (el) { el.textContent = fmt(res[+el.dataset.i][+el.dataset.s]); });
+  var warns = [];
+  res.forEach(function (r, i) {
+    var anyBad = r.bad.ent || r.bad.fae || r.bad.taken.length > 0;
+    var chip = document.querySelector('[data-chip="' + i + '"]');
+    if (chip) { chip.textContent = "Baki " + fmt(r[20]) + " hari"; chip.classList.toggle("bad", r.excess > 0 || anyBad); }
+    var sub = document.querySelector('[data-sub="' + i + '"]');
+    if (sub) sub.textContent = "Jumlah " + fmt(r[8]) + " hari";
+    var over = document.querySelector('[data-over="' + i + '"]');
+    if (over) {
+      over.hidden = r.excess <= 0;
+      over.textContent = "Anda hanya ada " + fmt(r[6]) + " hari, tetapi cuti digunakan " + fmt(r[10]) + " hari. Lebih " + fmt(r.excess) + " hari.";
+    }
+    var exp = document.querySelector('[data-exp="' + i + '"]');
+    if (exp) {
+      exp.hidden = r[17] <= 0;
+      exp.textContent = fmt(r[17]) + " hari daripada baki 2 tahun lepas tidak sempat digunakan dan akan luput pada hujung " + r.year + ".";
+    }
+    if (anyBad) warns.push(r.year + ": ada nombor yang tidak sah. Masukkan nombor sahaja, contohnya 5 atau 2.5.");
+    if (r.excess > 0) warns.push(r.year + ": cuti digunakan melebihi cuti yang ada sebanyak " + fmt(r.excess) + " hari.");
   });
-  ["open2", "open1"].forEach(function (f) {
-    var el = $(f); if (el) el.classList.toggle("bad", !parseNum(state[f]).ok);
+  state.years.forEach(function (y, i) {
+    document.querySelectorAll('input[data-f][data-i="' + i + '"]').forEach(function (inp) { inp.classList.toggle("bad", !!res[i].bad[inp.dataset.f]); });
+    document.querySelectorAll('input[data-tk="' + i + '"]').forEach(function (inp) { inp.classList.toggle("bad", res[i].bad.taken.indexOf(+inp.dataset.k) >= 0); });
   });
-  // warnings
-  var w = [];
-  res.forEach(function (r) {
-    if (r.bad.ent || r.bad.fae) w.push(r.year + ": kelayakan atau faedah mesti nombor sahaja.");
-    if (r.bad.taken) w.push(r.year + ": cuti diambil tidak sah. Guna nombor dan tanda + sahaja, contoh 4+4+3.");
-    if (r.excess > 0) w.push(r.year + ": cuti digunakan melebihi cuti yang ada sebanyak " + fmt(r.excess) + " hari.");
-  });
-  if (!parseNum(state.open2).ok || !parseNum(state.open1).ok) w.push("Baki awal mesti nombor sahaja.");
-  $("warns").innerHTML = w.map(function (t) { return "<div class='warn'>" + esc(t) + "</div>"; }).join("");
-  // summary
-  var L = res[last];
-  $("summary").innerHTML =
-    "<div class='tile'><div class='k'>Jumlah baki cuti " + L.year + "</div><div class='v'>" + fmt(L[20]) + "<small>hari</small></div><div class='n'>Baris 20</div></div>" +
-    "<div class='tile expire'><div class='k'>Luput hujung " + L.year + "</div><div class='v'>" + fmt(L[17]) + "<small>hari</small></div><div class='n'>Baki stok 2 tahun lepas, baris 17</div></div>" +
-    "<div class='tile'><div class='k'>Dibawa ke " + (L.year + 1) + "</div><div class='v'>" + fmt(round2(L[18] + L[19])) + "<small>hari</small></div><div class='n'>Baki 1 tahun lepas + tahun semasa</div></div>";
+  ["open2", "open1"].forEach(function (f) { $(f).classList.toggle("bad", !parseNum(state[f]).ok); });
+  if (!parseNum(state.open2).ok || !parseNum(state.open1).ok) warns.push("Baki awal: masukkan nombor sahaja.");
+  $("warns").innerHTML = warns.map(function (t) { return '<div class="warn">' + esc(t) + "</div>"; }).join("");
+
+  var L = res[last], carry = round2(L[18] + L[19]);
+  $("sumK").textContent = "Jumlah baki cuti pada hujung " + L.year;
+  $("sumNum").textContent = fmt(L[20]);
+  $("sumText").textContent = "Daripada " + fmt(L[20]) + " hari ini, " + fmt(L[17]) + " hari luput pada hujung " + L.year + " dan " + fmt(carry) + " hari dibawa ke " + (L.year + 1) + ".";
+  $("sumExpL").textContent = "Luput hujung " + L.year;
+  $("sumExp").textContent = fmt(L[17]) + " hari";
+  $("sumCarryL").textContent = "Dibawa ke " + (L.year + 1);
+  $("sumCarry").textContent = fmt(carry) + " hari";
   $("example").hidden = !state.example;
   $("delYear").disabled = state.years.length <= 1;
-  $("startYear").value = state.startYear;
 }
 
-$("tbl").addEventListener("input", function (e) {
-  var t = e.target;
-  if (t.dataset.open) state[t.dataset.open] = t.value;
-  else if (t.dataset.f) state.years[+t.dataset.i][t.dataset.f] = t.value;
+function touch() { state.example = false; state.touched = true; save(); refresh(); }
+
+document.addEventListener("input", function (e) {
+  var t = e.target, d = t.dataset;
+  if (t.id === "startYear") {
+    var v = parseInt(t.value, 10);
+    if (v >= 1990 && v <= 2100) { state.startYear = v; state.example = false; state.touched = true; save(); refreshTitles(); refresh(); }
+    return;
+  }
+  if (d.open) state[d.open] = t.value;
+  else if (d.f) state.years[+d.i][d.f] = t.value;
+  else if (d.tk !== undefined) state.years[+d.tk].taken[+d.k] = t.value;
   else return;
-  state.example = false; save(); refresh();
+  touch();
 });
-$("startYear").addEventListener("input", function (e) {
-  var v = parseInt(e.target.value, 10);
-  if (v >= 1990 && v <= 2100) { state.startYear = v; state.example = false; save(); build(); }
+function refreshTitles() {
+  document.querySelectorAll("details.year").forEach(function (el) {
+    el.querySelector(".yname").textContent = state.startYear + (+el.dataset.i);
+  });
+}
+function addLeave(i) {
+  state.years[i].taken.push("");
+  state.touched = true; openSet[i] = true; save(); build();
+  var el = $("tk-" + i + "-" + (state.years[i].taken.length - 1)); if (el) el.focus();
+}
+document.addEventListener("keydown", function (e) {
+  var t = e.target;
+  if (e.key === "Enter" && t.dataset && t.dataset.tk !== undefined) {
+    e.preventDefault();
+    var i = +t.dataset.tk, k = +t.dataset.k;
+    if (t.value.trim() !== "" && k === state.years[i].taken.length - 1) addLeave(i);
+    else { var nx = $("tk-" + i + "-" + (k + 1)); if (nx) nx.focus(); }
+  }
 });
+document.addEventListener("click", function (e) {
+  var b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.h) {
+    var p = $(b.dataset.h), show = p.hidden;
+    p.hidden = !show; b.setAttribute("aria-expanded", show ? "true" : "false");
+  } else if (b.dataset.add !== undefined) {
+    addLeave(+b.dataset.add);
+  } else if (b.dataset.del) {
+    var a = b.dataset.del.split(","), i = +a[0], k = +a[1], list = state.years[i].taken;
+    if (list.length > 1) list.splice(k, 1); else list[0] = "";
+    state.touched = true; save(); build();
+  }
+});
+document.addEventListener("toggle", function (e) {
+  var el = e.target;
+  if (el.classList && el.classList.contains("year")) { if (el.open) openSet[+el.dataset.i] = true; else delete openSet[+el.dataset.i]; }
+}, true);
+
 $("addYear").addEventListener("click", function () {
   var p = state.years[state.years.length - 1];
-  state.years.push({ ent: p.ent, taken: "", fae: p.fae }); state.example = false; save(); build();
-  var el = $("taken-" + (state.years.length - 1)); if (el) el.focus({ preventScroll: false });
+  state.years.push({ ent: p.ent, taken: [""], fae: p.fae });
+  var idx = state.years.length - 1;
+  state.example = false; state.touched = true; openSet[idx] = true; save(); build();
+  var el = $("tk-" + idx + "-0"); if (el) el.focus();
 });
 $("delYear").addEventListener("click", function () {
-  if (state.years.length > 1) { state.years.pop(); save(); build(); }
+  if (state.years.length > 1) {
+    state.years.pop(); delete openSet[state.years.length];
+    openSet[state.years.length - 1] = true; save(); build();
+  }
 });
-$("loadExample").addEventListener("click", function () { state = exampleState(); save(); build(); });
+$("loadExample").addEventListener("click", function () {
+  state = exampleState(); openSet = {}; openSet[state.years.length - 1] = true; save(); build();
+});
 var armed = null;
+function disarm() { clearTimeout(armed); armed = null; var b = $("reset"); b.textContent = "Kosongkan"; b.classList.remove("armed"); }
 $("reset").addEventListener("click", function () {
   var b = $("reset");
-  if (!armed) {
-    b.textContent = "Tekan lagi untuk sahkan"; b.classList.add("danger-armed");
-    armed = setTimeout(disarm, 4000);
-  } else { disarm(); state = blankState(); save(); build(); }
+  if (!armed) { b.textContent = "Tekan lagi untuk sahkan"; b.classList.add("armed"); armed = setTimeout(disarm, 4000); }
+  else { disarm(); state = blankState(); openSet = { 0: true }; save(); build(); }
 });
-function disarm() { clearTimeout(armed); armed = null; var b = $("reset"); b.textContent = "Kosongkan"; b.classList.remove("danger-armed"); }
+
+/* ---------- Laporan penuh ---------- */
+function reportDate() {
+  try { return new Date().toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" }); }
+  catch (e) { return new Date().toISOString().slice(0, 10); }
+}
+function takenList(y) { return y.taken.filter(function (s) { return String(s).trim() !== ""; }).map(function (s) { return String(s).trim(); }); }
+function reportProblems(res) {
+  var w = [];
+  res.forEach(function (r) {
+    if (r.bad.ent || r.bad.fae || r.bad.taken.length) w.push(r.year + ": ada nombor yang tidak sah.");
+    if (r.excess > 0) w.push(r.year + ": cuti digunakan melebihi cuti yang ada sebanyak " + fmt(r.excess) + " hari.");
+  });
+  return w;
+}
+function totals(res) {
+  var t = { ent: 0, taken: 0, fae: 0, used: 0, exp: 0 };
+  res.forEach(function (r) { t.ent += r[5]; t.taken += r[8]; t.fae += r[9]; t.used += r[10]; t.exp += r[17]; });
+  Object.keys(t).forEach(function (k) { t[k] = round2(t[k]); });
+  return t;
+}
+function buildReport() {
+  var res = compute(state), L = res[res.length - 1], first = res[0], t = totals(res), carry = round2(L[18] + L[19]);
+  var range = first.year === L.year ? String(L.year) : first.year + "–" + L.year;
+  var h = '<h2 class="rtitle">Laporan Kiraan Cuti ' + range + '</h2>';
+  h += '<p class="meta">' + (state.name ? "Nama: " + esc(state.name) + " · " : "") + "Disediakan " + reportDate() + "</p>";
+  reportProblems(res).forEach(function (m) { h += '<div class="rwarn">' + esc(m) + "</div>"; });
+  h += '<div class="pair3"><div><div class="pl">Jumlah baki cuti hujung ' + L.year + '</div><div class="pv">' + fmt(L[20]) + "<small>hari</small></div></div>" +
+       '<div class="exp"><div class="pl">Luput hujung ' + L.year + '</div><div class="pv">' + fmt(L[17]) + "<small>hari</small></div></div>" +
+       '<div><div class="pl">Dibawa ke ' + (L.year + 1) + '</div><div class="pv">' + fmt(carry) + "<small>hari</small></div></div></div>";
+  // ringkasan setiap tahun
+  h += "<h3>Ringkasan setiap tahun</h3><div class=\"tscroll\"><table class=\"rt\"><thead><tr><th>Tahun</th><th>Kelayakan</th><th>Dibawa masuk</th><th>Ada</th><th>Diambil</th><th>Faedah</th><th>Digunakan</th><th>Luput</th><th>Baki</th></tr></thead><tbody>";
+  res.forEach(function (r) {
+    h += "<tr><th scope=\"row\">" + r.year + "</th><td>" + fmt(r[5]) + "</td><td>" + fmt(round2(r[3] + r[4])) + "</td><td>" + fmt(r[6]) + "</td><td>" + fmt(r[8]) + "</td><td>" + fmt(r[9]) + "</td><td>" + fmt(r[10]) + "</td><td>" + fmt(r[17]) + "</td><td>" + fmt(r[20]) + "</td></tr>";
+  });
+  h += "<tr class=\"tot\"><th scope=\"row\">Jumlah</th><td>" + fmt(t.ent) + "</td><td>–</td><td>–</td><td>" + fmt(t.taken) + "</td><td>" + fmt(t.fae) + "</td><td>" + fmt(t.used) + "</td><td>" + fmt(t.exp) + "</td><td>–</td></tr></tbody></table></div>";
+  // terperinci
+  h += "<h3>Pengiraan terperinci</h3><div class=\"tscroll\"><table class=\"rt detail\"><thead><tr><th>Perkara</th>";
+  res.forEach(function (r) { h += "<th>" + r.year + "</th>"; });
+  h += "</tr></thead><tbody>";
+  FULL.forEach(function (f) {
+    var n = f[0];
+    h += "<tr class=\"" + (f[2] || "") + "\"><th scope=\"row\"><span class=\"rn\">" + n + "</span>" + f[1] + "</th>";
+    res.forEach(function (r) {
+      if (n === 15) { var ok = r.excess === 0; h += "<td class=\"" + (ok ? "ok" : "fail") + "\">" + fmt(r[15]) + (ok ? " ✓" : " ✗") + "</td>"; }
+      else h += "<td>" + fmt(r[n]) + "</td>";
+    });
+    h += "</tr>";
+    if (n === 8) {
+      h += "<tr><th scope=\"row\"><span class=\"rn\"></span>Senarai cuti diambil</th>";
+      state.years.forEach(function (y) { var l = takenList(y); h += "<td class=\"sm\">" + (l.length ? esc(l.join(" + ")) : "–") + "</td>"; });
+      h += "</tr>";
+    }
+  });
+  h += "</tbody></table></div>";
+  h += '<p class="meta">Cuti digunakan ditolak ikut urutan: baki 2 tahun lepas, baki tahun lepas, kemudian kelayakan tahun semasa. Baki stok 2 tahun lepas yang tinggal akan luput pada hujung tahun.</p>';
+  $("reportBody").innerHTML = h;
+  $("repName").value = state.name;
+}
+function reportText() {
+  var res = compute(state), L = res[res.length - 1], first = res[0], t = totals(res), carry = round2(L[18] + L[19]);
+  var range = first.year === L.year ? String(L.year) : first.year + "-" + L.year;
+  var o = ["LAPORAN KIRAAN CUTI " + range];
+  if (state.name) o.push("Nama: " + state.name);
+  o.push("Tarikh: " + reportDate(), "");
+  o.push("Jumlah baki cuti hujung " + L.year + ": " + fmt(L[20]) + " hari");
+  o.push("Luput hujung " + L.year + ": " + fmt(L[17]) + " hari");
+  o.push("Dibawa ke " + (L.year + 1) + ": " + fmt(carry) + " hari", "", "Setiap tahun:");
+  res.forEach(function (r) {
+    o.push(r.year + ": kelayakan " + fmt(r[5]) + ", dibawa masuk " + fmt(round2(r[3] + r[4])) + ", ada " + fmt(r[6]) +
+      ", diambil " + fmt(r[8]) + " + faedah " + fmt(r[9]) + " = digunakan " + fmt(r[10]) + ", luput " + fmt(r[17]) + ", baki " + fmt(r[20]));
+  });
+  o.push("", "Jumlah " + range + ": diambil " + fmt(t.taken) + ", faedah " + fmt(t.fae) + ", digunakan " + fmt(t.used) + ", luput " + fmt(t.exp));
+  reportProblems(res).forEach(function (m) { o.push("PERHATIAN " + m); });
+  return o.join("\n");
+}
+function copyText(t) {
+  var p = (navigator.clipboard && navigator.clipboard.writeText) ? navigator.clipboard.writeText(t) : Promise.reject();
+  return p.catch(function () {
+    var ta = document.createElement("textarea");
+    ta.value = t; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  });
+}
+var reportPushed = false;
+function route() {
+  var on = location.hash === "#laporan";
+  $("editView").hidden = on; $("reportView").hidden = !on;
+  if (on) { buildReport(); window.scrollTo(0, 0); } else { reportPushed = false; }
+}
+window.addEventListener("hashchange", route);
+$("openReport").addEventListener("click", function () { reportPushed = true; location.hash = "laporan"; });
+$("backBtn").addEventListener("click", function () { if (reportPushed) history.back(); else location.hash = ""; });
+$("printBtn").addEventListener("click", function () { window.print(); });
+var copyTimer = null;
+$("copyBtn").addEventListener("click", function () {
+  var b = $("copyBtn");
+  copyText(reportText()).then(function () {
+    b.textContent = "Disalin ✓"; clearTimeout(copyTimer);
+    copyTimer = setTimeout(function () { b.textContent = "Salin teks"; }, 2000);
+  });
+});
+$("repName").addEventListener("input", function (e) {
+  state.name = e.target.value; save();
+  var m = document.querySelector("#reportBody .meta");
+  if (m) m.textContent = (state.name ? "Nama: " + state.name + " · " : "") + "Disediakan " + reportDate();
+});
 
 build();
+route();
 </script>
 </body>
 </html>
