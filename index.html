@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiraan Cuti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column page. Summary on top, then the leave table laid out like the Excel sheet (rows = items, columns = years). */
+:root {
+  --bg: #F2F4F6;
+  --surface: #FFFFFF;
+  --fg: #16212B;
+  --muted: #5B6875;
+  --line: #D5DBE1;
+  --accent: #1D4A73;
+  --accent-fg: #FFFFFF;
+  --input-bg: #EAF1F8;
+  --ok: #1E7A4D;
+  --bad: #B3261E;
+  --bad-bg: #FBE9E7;
+  --expire: #7A4E00;
+  --expire-bg: #FBF1DC;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1720; --surface: #17212C; --fg: #E6EBF0; --muted: #93A1AF; --line: #2B3947;
+    --accent: #7FB2E5; --accent-fg: #0F1720; --input-bg: #1E2E40; --ok: #5CC48E;
+    --bad: #F2877E; --bad-bg: #3A1D1B; --expire: #E8B659; --expire-bg: #2E2713;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1720; --surface: #17212C; --fg: #E6EBF0; --muted: #93A1AF; --line: #2B3947;
+  --accent: #7FB2E5; --accent-fg: #0F1720; --input-bg: #1E2E40; --ok: #5CC48E;
+  --bad: #F2877E; --bad-bg: #3A1D1B; --expire: #E8B659; --expire-bg: #2E2713;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.5;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--font-head); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+button { font: inherit; }
+.btn {
+  background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 12px; cursor: pointer; min-height: 40px;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 500; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.danger-armed { border-color: var(--bad); color: var(--bad); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.example {
+  background: var(--expire-bg); color: var(--expire); border-radius: 6px; padding: 10px 14px; font-size: .9rem;
+}
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; }
+.tile .k { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.tile .v { font-family: var(--font-num); font-size: 2.1rem; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: .9rem; color: var(--muted); font-family: var(--font-body); margin-left: 4px; }
+.tile.expire { background: var(--expire-bg); border-color: transparent; }
+.tile.expire .k, .tile.expire .v, .tile.expire .v small { color: var(--expire); }
+.tile .n { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+.tile.expire .n { color: var(--expire); }
+
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar .grow { flex: 1 1 auto; }
+.yr { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .9rem; }
+.yr input { width: 5.2rem; }
+
+.warns { display: flex; flex-direction: column; gap: 6px; }
+.warn { background: var(--bad-bg); color: var(--bad); border-radius: 6px; padding: 8px 12px; font-size: .9rem; }
+
+.tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: max-content; }
+th, td { padding: 0; border-bottom: 1px solid var(--line); text-align: right; height: 42px; }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+thead th { font-family: var(--font-num); font-weight: 500; background: var(--surface); height: 44px; padding: 0 10px; }
+thead th.corner, th.rl {
+  position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left;
+  min-width: 11.5rem; max-width: 11.5rem; padding: 4px 12px; border-right: 1px solid var(--line);
+}
+th.rl { font-weight: 400; font-size: .86rem; line-height: 1.25; }
+th.rl .rn { font-family: var(--font-num); font-size: .72rem; color: var(--muted); margin-right: 6px; }
+th.rl.manual { font-weight: 600; }
+td { min-width: 6rem; padding: 0 10px; font-family: var(--font-num); font-variant-numeric: tabular-nums; font-size: .95rem; }
+td.in { padding: 4px 6px; background: var(--input-bg); }
+td.in input {
+  width: 100%; min-width: 5rem; background: var(--surface); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 8px; text-align: right; font: inherit; height: 34px;
+}
+td.in input:focus { border-color: var(--accent); }
+td.in input.bad { border-color: var(--bad); color: var(--bad); }
+td.zero { color: var(--muted); }
+tr.total th.rl, tr.total td { font-weight: 600; background: var(--input-bg); }
+tr.total th.rl { background: var(--input-bg); }
+tr.expire th.rl, tr.expire td { color: var(--expire); }
+tr.check td.ok { color: var(--ok); }
+tr.check td.fail { color: var(--bad); font-weight: 600; }
+tr.sep th, tr.sep td { border-top: 2px solid var(--line); }
+td.last, thead th.last { box-shadow: inset 0 3px 0 var(--accent); }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+summary { cursor: pointer; font-weight: 500; }
+details ol { margin: 10px 0 2px; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--line); }
+@media (max-width: 520px) {
+  h1 { font-size: 1.7rem; }
+  thead th.corner, th.rl { min-width: 8.6rem; max-width: 8.6rem; padding: 4px 8px; }
+  th.rl .rn { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) { .btn { transition: border-color .15s; } }
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Kiraan Cuti</h1>
+    <p class="sub">Kira baki cuti tahunan. Cuti yang lama digunakan dahulu, dan baki dibawa ke tahun berikutnya selama 2 tahun.</p>
+  </header>
+
+  <div id="example" class="example" hidden>Ini data contoh. Tukar nilai dalam kotak biru, atau tekan Kosongkan untuk mula dengan data anda.</div>
+
+  <section class="summary" id="summary" aria-live="polite"></section>
+
+  <section class="bar">
+    <label class="yr" for="startYear">Tahun mula <input class="btn" id="startYear" type="number" inputmode="numeric" min="1990" max="2100"></label>
+    <span class="grow"></span>
+    <button class="btn primary" id="addYear" type="button">Tambah tahun</button>
+    <button class="btn" id="delYear" type="button">Buang tahun terakhir</button>
+    <button class="btn" id="loadExample" type="button">Contoh</button>
+    <button class="btn" id="reset" type="button">Kosongkan</button>
+  </section>
+
+  <div class="warns" id="warns" role="status"></div>
+
+  <div class="tablebox"><table id="tbl"></table></div>
+
+  <div class="legend">
+    <span><i style="background:var(--input-bg)"></i>Isi sendiri</span>
+    <span><i style="background:var(--surface)"></i>Dikira automatik</span>
+    <span>Cuti diambil: tulis seperti 4+4+3 (setiap cuti satu nombor)</span>
+  </div>
+
+  <details>
+    <summary>Cara kiraan</summary>
+    <ol>
+      <li>Jumlah cuti tahun semasa = kelayakan tahun ini + baki tahun lepas + baki 2 tahun lepas.</li>
+      <li>Jumlah cuti digunakan = cuti diambil + faedah ganti cuti rehat.</li>
+      <li>Cuti digunakan ditolak ikut urutan: baki 2 tahun lepas sehingga kosong, kemudian baki tahun lepas sehingga kosong, dan akhir sekali kelayakan tahun semasa.</li>
+      <li>Baki stok 2 tahun lepas yang masih ada akan luput pada hujung tahun. Baki tahun lepas menjadi baki 2 tahun lepas, dan baki tahun semasa menjadi baki tahun lepas pada tahun berikutnya.</li>
+      <li>Baris 15 ialah semakan. Jumlahnya mesti sama dengan baris 10. Jika tidak sama, cuti digunakan melebihi cuti yang ada.</li>
+    </ol>
+  </details>
+</div>
+
+<script>
+/*LOGIC-START*/
+function round2(x) { return Math.round(x * 100) / 100; }
+function parseTaken(s) {
+  if (s == null || String(s).trim() === "") return { sum: 0, ok: true };
+  var parts = String(s).split("+"), sum = 0;
+  for (var i = 0; i < parts.length; i++) {
+    var t = parts[i].trim().replace(",", ".");
+    if (!/^\d+(\.\d+)?$/.test(t)) return { sum: 0, ok: false };
+    sum += parseFloat(t);
+  }
+  return { sum: round2(sum), ok: true };
+}
+function parseNum(s) {
+  if (s == null || String(s).trim() === "") return { v: 0, ok: true };
+  var t = String(s).trim().replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(t)) return { v: 0, ok: false };
+  return { v: parseFloat(t), ok: true };
+}
+function compute(st) {
+  var p2 = parseNum(st.open2).v, p1 = parseNum(st.open1).v, out = [];
+  for (var i = 0; i < st.years.length; i++) {
+    var y = st.years[i], ent = parseNum(y.ent), fae = parseNum(y.fae), tk = parseTaken(y.taken);
+    var r = { year: st.startYear + i, bad: { ent: !ent.ok, fae: !fae.ok, taken: !tk.ok } };
+    r[3] = p2; r[4] = p1; r[5] = ent.v;
+    r[6] = round2(r[5] + r[4] + r[3]);
+    r[8] = tk.sum; r[9] = fae.v;
+    r[10] = round2(r[8] + r[9]);
+    var need = r[10];
+    r[12] = Math.min(r[3], need); need = round2(need - r[12]);
+    r[13] = Math.min(r[4], need); need = round2(need - r[13]);
+    r[14] = Math.min(r[5], need);
+    r[15] = round2(r[12] + r[13] + r[14]);
+    r.excess = round2(r[10] - r[15]);
+    r[17] = round2(r[3] - r[12]);
+    r[18] = round2(r[4] - r[13]);
+    r[19] = round2(r[5] - r[14]);
+    r[20] = round2(r[17] + r[18] + r[19]);
+    out.push(r);
+    p2 = r[18]; p1 = r[19];
+  }
+  return out;
+}
+/*LOGIC-END*/
+
+var KEY = "kiraan-cuti-v1";
+function exampleState() {
+  return { example: true, startYear: 2023, open2: "0", open1: "0", years: [
+    { ent: "42", taken: "5+8+3", fae: "15" },
+    { ent: "42", taken: "4+4+6+2", fae: "15" },
+    { ent: "42", taken: "10+7+3+5", fae: "15" },
+    { ent: "42", taken: "12+4+9", fae: "15" }
+  ]};
+}
+function blankState() {
+  return { example: false, startYear: new Date().getFullYear(), open2: "0", open1: "0", years: [{ ent: "", taken: "", fae: "" }] };
+}
+var state;
+try { var raw = localStorage.getItem(KEY); state = raw ? JSON.parse(raw) : null; } catch (e) { state = null; }
+if (!state || !Array.isArray(state.years) || !state.years.length) state = exampleState();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+var $ = function (id) { return document.getElementById(id); };
+function fmt(x) { return (Math.round(x * 100) / 100).toString().replace(".", ","); }
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+var ROWS = [
+  { n: 3,  label: "Baki cuti 2 tahun lepas", kind: "calc" },
+  { n: 4,  label: "Baki cuti 1 tahun lepas", kind: "calc" },
+  { n: 5,  label: "Kelayakan cuti tahunan", kind: "in", f: "ent" },
+  { n: 6,  label: "Jumlah cuti tahun semasa", kind: "calc", cls: "total" },
+  { n: 8,  label: "Jumlah cuti diambil", kind: "in", f: "taken", sep: true },
+  { n: 9,  label: "Faedah ganti cuti rehat", kind: "in", f: "fae" },
+  { n: 10, label: "Jumlah cuti digunakan", kind: "calc", cls: "total" },
+  { n: 12, label: "Cuti 2 tahun lepas digunakan", kind: "calc", sep: true },
+  { n: 13, label: "Cuti 1 tahun lepas digunakan", kind: "calc" },
+  { n: 14, label: "Cuti tahun semasa digunakan", kind: "calc" },
+  { n: 15, label: "Semakan (12+13+14 = 10)", kind: "calc", cls: "check" },
+  { n: 17, label: "Baki stok 2 tahun lepas (luput hujung tahun)", kind: "calc", cls: "expire", sep: true },
+  { n: 18, label: "Baki stok 1 tahun lepas", kind: "calc" },
+  { n: 19, label: "Baki peruntukan tahun semasa", kind: "calc" },
+  { n: 20, label: "Jumlah baki cuti", kind: "calc", cls: "total" }
+];
+
+function build() {
+  var res = compute(state), last = state.years.length - 1;
+  var h = "<thead><tr><th class='corner' scope='col'>Tahun</th>";
+  res.forEach(function (r, i) { h += "<th scope='col' class='" + (i === last ? "last" : "") + "'>" + r.year + "</th>"; });
+  h += "</tr></thead><tbody>";
+  ROWS.forEach(function (row) {
+    var cls = [row.cls || "", row.sep ? "sep" : ""].join(" ");
+    var manual = row.kind === "in";
+    h += "<tr class='" + cls + "'><th scope='row' class='rl" + (manual ? " manual" : "") + "'><span class='rn'>" + row.n + "</span>" + row.label + "</th>";
+    state.years.forEach(function (y, i) {
+      var lc = i === last ? " last" : "";
+      if (manual) {
+        h += "<td class='in" + lc + "'><input id='" + row.f + "-" + i + "' data-f='" + row.f + "' data-i='" + i + "' type='text' inputmode='" + (row.f === "taken" ? "text" : "decimal") + "' autocomplete='off' value='" + esc(y[row.f]) + "' placeholder='" + (row.f === "taken" ? "4+4+3" : row.f === "ent" ? "42" : "15") + "' aria-label='" + row.label + " " + res[i].year + "'></td>";
+      } else if ((row.n === 3 || row.n === 4) && i === 0) {
+        var f = row.n === 3 ? "open2" : "open1";
+        h += "<td class='in" + lc + "'><input id='" + f + "' data-open='" + f + "' type='text' inputmode='decimal' autocomplete='off' value='" + esc(state[f]) + "' aria-label='" + row.label + " (baki awal " + res[0].year + ")'></td>";
+      } else {
+        h += "<td data-r='" + row.n + "' data-i='" + i + "' class='" + lc + "'></td>";
+      }
+    });
+    h += "</tr>";
+  });
+  h += "</tbody>";
+  $("tbl").innerHTML = h;
+  refresh();
+}
+
+function refresh() {
+  var res = compute(state), last = res.length - 1;
+  document.querySelectorAll("td[data-r]").forEach(function (td) {
+    var n = +td.dataset.r, i = +td.dataset.i, r = res[i], v = r[n];
+    td.textContent = fmt(v);
+    td.classList.toggle("zero", v === 0 && n !== 20);
+    if (n === 15) {
+      var ok = r.excess === 0;
+      td.textContent = fmt(v) + (ok ? " ✓" : " ✗");
+      td.classList.toggle("ok", ok); td.classList.toggle("fail", !ok);
+      td.title = ok ? "Sepadan dengan baris 10" : "Tidak sepadan: lebih " + fmt(r.excess) + " hari";
+    }
+  });
+  document.querySelectorAll("td.in input[data-i]").forEach(function (inp) {
+    var f = inp.dataset.f, i = +inp.dataset.i;
+    inp.classList.toggle("bad", !!res[i].bad[f]);
+  });
+  ["open2", "open1"].forEach(function (f) {
+    var el = $(f); if (el) el.classList.toggle("bad", !parseNum(state[f]).ok);
+  });
+  // warnings
+  var w = [];
+  res.forEach(function (r) {
+    if (r.bad.ent || r.bad.fae) w.push(r.year + ": kelayakan atau faedah mesti nombor sahaja.");
+    if (r.bad.taken) w.push(r.year + ": cuti diambil tidak sah. Guna nombor dan tanda + sahaja, contoh 4+4+3.");
+    if (r.excess > 0) w.push(r.year + ": cuti digunakan melebihi cuti yang ada sebanyak " + fmt(r.excess) + " hari.");
+  });
+  if (!parseNum(state.open2).ok || !parseNum(state.open1).ok) w.push("Baki awal mesti nombor sahaja.");
+  $("warns").innerHTML = w.map(function (t) { return "<div class='warn'>" + esc(t) + "</div>"; }).join("");
+  // summary
+  var L = res[last];
+  $("summary").innerHTML =
+    "<div class='tile'><div class='k'>Jumlah baki cuti " + L.year + "</div><div class='v'>" + fmt(L[20]) + "<small>hari</small></div><div class='n'>Baris 20</div></div>" +
+    "<div class='tile expire'><div class='k'>Luput hujung " + L.year + "</div><div class='v'>" + fmt(L[17]) + "<small>hari</small></div><div class='n'>Baki stok 2 tahun lepas, baris 17</div></div>" +
+    "<div class='tile'><div class='k'>Dibawa ke " + (L.year + 1) + "</div><div class='v'>" + fmt(round2(L[18] + L[19])) + "<small>hari</small></div><div class='n'>Baki 1 tahun lepas + tahun semasa</div></div>";
+  $("example").hidden = !state.example;
+  $("delYear").disabled = state.years.length <= 1;
+  $("startYear").value = state.startYear;
+}
+
+$("tbl").addEventListener("input", function (e) {
+  var t = e.target;
+  if (t.dataset.open) state[t.dataset.open] = t.value;
+  else if (t.dataset.f) state.years[+t.dataset.i][t.dataset.f] = t.value;
+  else return;
+  state.example = false; save(); refresh();
+});
+$("startYear").addEventListener("input", function (e) {
+  var v = parseInt(e.target.value, 10);
+  if (v >= 1990 && v <= 2100) { state.startYear = v; state.example = false; save(); build(); }
+});
+$("addYear").addEventListener("click", function () {
+  var p = state.years[state.years.length - 1];
+  state.years.push({ ent: p.ent, taken: "", fae: p.fae }); state.example = false; save(); build();
+  var el = $("taken-" + (state.years.length - 1)); if (el) el.focus({ preventScroll: false });
+});
+$("delYear").addEventListener("click", function () {
+  if (state.years.length > 1) { state.years.pop(); save(); build(); }
+});
+$("loadExample").addEventListener("click", function () { state = exampleState(); save(); build(); });
+var armed = null;
+$("reset").addEventListener("click", function () {
+  var b = $("reset");
+  if (!armed) {
+    b.textContent = "Tekan lagi untuk sahkan"; b.classList.add("danger-armed");
+    armed = setTimeout(disarm, 4000);
+  } else { disarm(); state = blankState(); save(); build(); }
+});
+function disarm() { clearTimeout(armed); armed = null; var b = $("reset"); b.textContent = "Kosongkan"; b.classList.remove("danger-armed"); }
+
+build();
+</script>
+</body>
+</html>
