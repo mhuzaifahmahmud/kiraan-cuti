@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maklum Balas Kiraan Cuti</title>
+<style>
+:root { --bg:#F2F4F6; --surface:#fff; --fg:#16212B; --muted:#5B6875; --line:#D5DCE3; --accent:#1F5F99; --accent-fg:#fff; --ok:#1E7A4D; --bad:#B3261E; --bad-bg:#FBE9E7; --input-bg:#EAF1F8; }
+@media (prefers-color-scheme: dark) { :root { --bg:#0F1720; --surface:#17222E; --fg:#E8EEF4; --muted:#9AA8B5; --line:#2C3A49; --accent:#7FB2E5; --accent-fg:#0F1720; --ok:#5CC48E; --bad:#F2877E; --bad-bg:#3A1D1B; --input-bg:#1E2E40; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+.wrap { max-width:560px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
+h1 { font-size:1.35rem; margin:8px 0 0; } p { margin:0; color:var(--muted); font-size:.95rem; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+.q { font-weight:600; } .opt { font-size:.85rem; color:var(--muted); font-weight:400; }
+.scale { display:flex; gap:8px; } .scale label { flex:1; }
+.scale input, .choice input { position:absolute; opacity:0; }
+.scale span { display:block; text-align:center; padding:12px 0; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); font-weight:600; }
+.scale input:checked + span { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+.scale input:focus-visible + span, .choice input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+.scalelbl { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); }
+.choices { display:flex; flex-wrap:wrap; gap:8px; } .choice { position:relative; }
+.choice span { display:block; padding:10px 14px; border:1px solid var(--line); border-radius:999px; background:var(--input-bg); font-size:.95rem; }
+.choice input:checked + span { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+textarea, input[type=text] { width:100%; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--fg); }
+textarea { min-height:96px; resize:vertical; }
+.btn { font:inherit; font-weight:600; padding:14px; border-radius:10px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-fg); cursor:pointer; }
+.btn:disabled { opacity:.6; } .back { color:var(--accent); font-size:.95rem; }
+.msg { padding:12px; border-radius:8px; font-size:.95rem; } .msg.ok { background:var(--input-bg); color:var(--ok); } .msg.err { background:var(--bad-bg); color:var(--bad); }
+</style>
+<script>
+/* Tetapan: tampal URL Web App Google Apps Script anda (lihat PANDUAN-SURVEY.md) dan kod GoatCounter. */
+var ENDPOINT = "https://script.google.com/macros/s/AKfycbyFr-nTGqNDI-xAbNK-3pC35SnXsmEDT2t8L4y12iU_Zkf2XP0Ur_al54tOeyDxgpvx/exec";
+var GC_CODE = "mhuzaifahmahmud";
+if (GC_CODE) { var gs = document.createElement("script"); gs.async = true; gs.src = "https://gc.zgo.at/count.js"; gs.setAttribute("data-goatcounter", "https://" + GC_CODE + ".goatcounter.com/count"); document.head.appendChild(gs); }
+</script>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">&larr; Kembali ke kalkulator</a>
+  <h1>Maklum Balas Kiraan Cuti</h1>
+  <p>Mengambil masa kira-kira 2 minit. Tidak perlu nama atau data cuti anda.</p>
+  <form id="f" class="card" style="gap:18px" novalidate>
+    <div><div class="q">1. Setakat mana anda berpuas hati dengan kalkulator ini?</div>
+      <div class="scale" style="margin-top:8px"><label><input type="radio" name="puas" value="1"><span>1</span></label><label><input type="radio" name="puas" value="2"><span>2</span></label><label><input type="radio" name="puas" value="3"><span>3</span></label><label><input type="radio" name="puas" value="4"><span>4</span></label><label><input type="radio" name="puas" value="5"><span>5</span></label></div>
+      <div class="scalelbl"><span>Tidak puas hati</span><span>Sangat puas hati</span></div></div>
+    <div><div class="q">2. Adakah mudah digunakan?</div>
+      <div class="scale" style="margin-top:8px"><label><input type="radio" name="mudah" value="1"><span>1</span></label><label><input type="radio" name="mudah" value="2"><span>2</span></label><label><input type="radio" name="mudah" value="3"><span>3</span></label><label><input type="radio" name="mudah" value="4"><span>4</span></label><label><input type="radio" name="mudah" value="5"><span>5</span></label></div>
+      <div class="scalelbl"><span>Sukar</span><span>Sangat mudah</span></div></div>
+    <div><div class="q">3. Adakah baki cuti yang dikira sepadan dengan rekod anda?</div>
+      <div class="choices" style="margin-top:8px"><label class="choice"><input type="radio" name="tepat" value="Ya"><span>Ya</span></label><label class="choice"><input type="radio" name="tepat" value="Tidak"><span>Tidak</span></label><label class="choice"><input type="radio" name="tepat" value="Belum semak"><span>Belum semak</span></label></div></div>
+    <div><div class="q">4. Peranti yang anda gunakan</div>
+      <div class="choices" style="margin-top:8px"><label class="choice"><input type="radio" name="peranti" value="Android"><span>Android</span></label><label class="choice"><input type="radio" name="peranti" value="iPhone"><span>iPhone</span></label><label class="choice"><input type="radio" name="peranti" value="Komputer"><span>Komputer</span></label></div></div>
+    <div><div class="q">5. Ciri yang paling berguna <span class="opt">(boleh pilih lebih daripada satu)</span></div>
+      <div class="choices" style="margin-top:8px"><label class="choice"><input type="checkbox" name="ciri" value="Kiraan automatik"><span>Kiraan automatik</span></label><label class="choice"><input type="checkbox" name="ciri" value="Laporan penuh"><span>Laporan penuh</span></label><label class="choice"><input type="checkbox" name="ciri" value="PDF"><span>Muat turun PDF</span></label><label class="choice"><input type="checkbox" name="ciri" value="Import PDF"><span>Import PDF</span></label><label class="choice"><input type="checkbox" name="ciri" value="Simpan automatik"><span>Simpan automatik</span></label></div></div>
+    <div><div class="q">6. Apa yang boleh diperbaiki? <span class="opt">(pilihan)</span></div><textarea name="baik" maxlength="1000" style="margin-top:8px"></textarea></div>
+    <div><div class="q">7. Cadangan projek atau alat lain yang anda mahu <span class="opt">(pilihan)</span></div><textarea name="projek" maxlength="1000" style="margin-top:8px"></textarea></div>
+    <div><div class="q">8. Pangkat / unit atau cara hubungi <span class="opt">(pilihan)</span></div><input type="text" name="hubung" maxlength="120" style="margin-top:8px"></div>
+    <div id="msg" class="msg" hidden></div>
+    <button class="btn" id="send" type="submit">Hantar maklum balas</button>
+  </form>
+</div>
+<script>
+var f = document.getElementById("f"), msg = document.getElementById("msg"), btn = document.getElementById("send");
+function show(t, c) { msg.textContent = t; msg.className = "msg " + c; msg.hidden = false; msg.scrollIntoView({ block: "nearest" }); }
+f.addEventListener("submit", function (e) {
+  e.preventDefault();
+  var d = { puas: "", mudah: "", tepat: "", peranti: "", ciri: [], baik: f.baik.value.trim(), projek: f.projek.value.trim(), hubung: f.hubung.value.trim() };
+  ["puas", "mudah", "tepat", "peranti"].forEach(function (n) { var c = f.querySelector('input[name="' + n + '"]:checked'); if (c) d[n] = c.value; });
+  f.querySelectorAll('input[name="ciri"]:checked').forEach(function (c) { d.ciri.push(c.value); });
+  if (!d.puas) { show("Sila pilih skor kepuasan (soalan 1).", "err"); return; }
+  if (!ENDPOINT) { show("Survey belum diaktifkan oleh pentadbir.", "err"); return; }
+  btn.disabled = true; btn.textContent = "Menghantar…";
+  d.ciri = d.ciri.join(", ");
+  fetch(ENDPOINT, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(d) })
+    .then(function () { f.reset(); btn.hidden = true; show("Terima kasih! Maklum balas anda telah dihantar.", "ok"); })
+    .catch(function () { btn.disabled = false; btn.textContent = "Hantar maklum balas"; show("Gagal menghantar. Semak sambungan internet dan cuba lagi.", "err"); });
+});
+</script>
+</body>
+</html>
