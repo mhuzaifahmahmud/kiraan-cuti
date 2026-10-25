@@ -206,7 +206,8 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   .rt.detail thead th:first-child { width: 25%; }
   .rt tbody th, .rt thead th:first-child { position: static; }
   .rt.detail tbody th { min-width: 0; }
-  .detailwrap { break-before: page; }
+  .detailwrap { break-before: page; page-break-before: always; break-inside: avoid; page-break-inside: avoid; }
+  .detailwrap table { break-inside: avoid; page-break-inside: avoid; }
   .rt thead th, .rt tr.t th, .rt tr.t td, .rt tr.tot th, .rt tr.tot td, .pair3 > div { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .notice { background: var(--input-bg); color: var(--ok); border-radius: 8px; padding: 10px 14px; font-size: .92rem; }
