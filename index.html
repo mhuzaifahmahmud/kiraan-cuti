@@ -190,7 +190,11 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   body { padding: 0 !important; font-size: 10pt; }
   body header, .noprint { display: none !important; }
   .wrap, #reportView, .report { max-width: none !important; width: 100% !important; }
-  .report { border: 0; padding: 0; gap: 8px; }
+  .report { border: 0; padding: 0; }
+  /* Safari/iOS mengabaikan pemisah halaman di dalam flexbox, jadi cetakan guna susun atur block biasa */
+  .wrap:not([hidden]), #reportView:not([hidden]), .stack:not([hidden]), .report { display: block !important; }
+  .report > * + * { margin-top: 8px; }
+  .detailwrap { margin-top: 0 !important; }
   .rtitle { font-size: 16pt; }
   .report h3 { font-size: 11pt; margin: 4px 0 0; break-after: avoid; }
   .pair3 > div { padding: 6px 10px; }
