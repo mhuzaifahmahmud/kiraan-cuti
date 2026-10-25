@@ -173,7 +173,18 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
 .rt thead th { background: var(--input-bg); font-weight: 600; }
 .rt tbody th { text-align: left; font-weight: 400; position: sticky; left: 0; background: var(--surface); border-right: 1px solid var(--line); }
 .rt thead th:first-child { text-align: left; position: sticky; left: 0; background: var(--input-bg); border-right: 1px solid var(--line); }
-.rt.detail tbody th { white-space: normal; min-width: 11rem; }
+.rt.detail { font-size: .82rem; }
+.rt.detail th, .rt.detail td { padding: 7px 8px; }
+.rt.detail tbody th, .rt.detail thead th:first-child { width: 7.2rem; min-width: 7.2rem; max-width: 7.2rem; white-space: normal; line-height: 1.25; font-size: .76rem; padding: 7px 6px; }
+.rt.detail .rn { margin-right: 4px; }
+.rt.detail td { min-width: 3rem; }
+.rt.detail td.sm { white-space: normal; max-width: 4.5rem; overflow-wrap: anywhere; font-size: .68rem; line-height: 1.25; }
+.rhint { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translate(-50%, 16px); display: flex; align-items: center; gap: 10px; max-width: min(92vw, 420px); padding: 11px 16px; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: .9rem; box-shadow: 0 6px 24px rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .35s ease, transform .35s ease; z-index: 50; }
+.rhint.show { opacity: 1; transform: translate(-50%, 0); }
+.rhint svg { flex: none; width: 26px; height: 26px; }
+@media (prefers-reduced-motion: reduce) { .rhint { transition: none; } .rhint svg { animation: none !important; } }
+@keyframes rot { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+.rhint.show svg { animation: rot 1.8s ease-in-out .3s 2 both; }
 .rt .rn { font-family: var(--font-num); color: var(--muted); font-size: .72rem; margin-right: 6px; }
 .rt tr:last-child th, .rt tr:last-child td { border-bottom: 0; }
 .rt tr.t th, .rt tr.t td { font-weight: 600; background: var(--input-bg); }
@@ -188,7 +199,7 @@ details.full > summary { font-weight: 400; color: var(--accent); padding: 8px 0;
   :root:root:root { --bg:#fff; --surface:#fff; --fg:#000; --muted:#333; --line:#999; --accent:#000; --input-bg:#eee; --expire:#000; --expire-bg:#eee; --bad:#900; --bad-bg:#fff; --ok:#060; color-scheme: light; }
   html, body { background: #fff; }
   body { padding: 0 !important; font-size: 10pt; }
-  body header, .noprint { display: none !important; }
+  body header, .noprint, .rhint { display: none !important; }
   .wrap, #reportView, .report { max-width: none !important; width: 100% !important; }
   .report { border: 0; padding: 0; }
   /* Safari/iOS mengabaikan pemisah halaman di dalam flexbox, jadi cetakan guna susun atur block biasa */
@@ -324,6 +335,8 @@ if (GC_CODE) { var gs = document.createElement("script"); gs.async = true; gs.sr
   </section>
 </div>
 
+<div id="rotateHint" class="rhint noprint" role="status" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg><span>Putar telefon ke landscape untuk paparan penuh</span></div>
+
 <script>
 /*LOGIC-START*/
 function round2(x) { return Math.round(x * 100) / 100; }
@@ -427,7 +440,7 @@ var HELP = {
 };
 var FULL = [
   [3, "Baki cuti 2 tahun lepas"], [4, "Baki cuti 1 tahun lepas"], [5, "Kelayakan cuti tahunan"],
-  [6, "Jumlah Cuti", "t"], [8, "Jumlah Cuti Diambil"], [9, "GCR"], ["fc", "Jumlah GCR sehingga tahun ini"],
+  [6, "Jumlah Layak Cuti", "t"], [8, "Jumlah Cuti Diambil"], [9, "GCR"], ["fc", "Jumlah GCR sehingga tahun ini"],
   [10, "Jumlah Cuti Diambil + GCR", "t"], [12, "Ditolak dari baki 2 tahun lepas"], [13, "Ditolak dari baki tahun lepas"],
   [14, "Ditolak dari kelayakan tahun semasa"], [15, "Semakan (12+13+14 = 10)"],
   [17, "Cuti Luput (baki 2 tahun lepas yang tinggal)", "e"], [18, "Baki tahun lepas yang tinggal"],
@@ -460,7 +473,7 @@ function yearCard(y, i, year) {
       '<div class="field"><div class="lbl"><label for="fae-' + i + '">GCR (Ganti Cuti Rehat)</label>' + helpBtn("h-fae-" + i) + '</div>' +
         '<p class="helptext" id="h-fae-' + i + '" hidden>' + HELP.fae + '</p>' +
         '<div class="inwrap"><input class="f" id="fae-' + i + '" data-f="fae" data-i="' + i + '" type="text" inputmode="decimal" autocomplete="off" placeholder="contoh 15" value="' + esc(y.fae) + '"><span class="u">hari</span></div><p class="fcnote" data-fc="' + i + '"></p></div>' +
-      '<div class="stats"><div><div class="l">Jumlah Cuti</div><div class="v" data-s="6" data-i="' + i + '"></div></div>' +
+      '<div class="stats"><div><div class="l">Jumlah Layak Cuti</div><div class="v" data-s="6" data-i="' + i + '"></div></div>' +
         '<div><div class="l">Cuti Luput</div><div class="v" data-s="17" data-i="' + i + '"></div></div>' +
         '<div><div class="l">Baki Cuti Ke Tahun Hadapan</div><div class="v" data-s="cf" data-i="' + i + '"></div></div></div>' +
       '<p class="note err" data-over="' + i + '" hidden></p>' +
@@ -503,7 +516,7 @@ function refresh() {
     var over = document.querySelector('[data-over="' + i + '"]');
     if (over) {
       over.hidden = r.excess <= 0;
-      over.textContent = "Jumlah Cuti anda hanya " + fmt(r[6]) + " hari, tetapi Cuti Diambil + GCR ialah " + fmt(r[10]) + " hari. Lebih " + fmt(r.excess) + " hari.";
+      over.textContent = "Jumlah Layak Cuti anda hanya " + fmt(r[6]) + " hari, tetapi Cuti Diambil + GCR ialah " + fmt(r[10]) + " hari. Lebih " + fmt(r.excess) + " hari.";
     }
     var exp = document.querySelector('[data-exp="' + i + '"]');
     if (exp) {
@@ -511,7 +524,7 @@ function refresh() {
       exp.textContent = "Cuti Luput: " + fmt(r[17]) + " hari daripada baki 2 tahun lepas tidak sempat digunakan dan hilang pada hujung " + r.year + ".";
     }
     if (anyBad) warns.push(r.year + ": ada nombor yang tidak sah. Masukkan nombor sahaja, contohnya 5 atau 2.5.");
-    if (r.excess > 0) warns.push(r.year + ": Cuti Diambil + GCR melebihi Jumlah Cuti sebanyak " + fmt(r.excess) + " hari.");
+    if (r.excess > 0) warns.push(r.year + ": Cuti Diambil + GCR melebihi Jumlah Layak Cuti sebanyak " + fmt(r.excess) + " hari.");
   });
   state.years.forEach(function (y, i) {
     document.querySelectorAll('input[data-f][data-i="' + i + '"]').forEach(function (inp) { inp.classList.toggle("bad", !!res[i].bad[inp.dataset.f]); });
@@ -616,7 +629,7 @@ function reportProblems(res) {
   var w = [];
   res.forEach(function (r) {
     if (r.bad.ent || r.bad.fae || r.bad.taken.length) w.push(r.year + ": ada nombor yang tidak sah.");
-    if (r.excess > 0) w.push(r.year + ": Cuti Diambil + GCR melebihi Jumlah Cuti sebanyak " + fmt(r.excess) + " hari.");
+    if (r.excess > 0) w.push(r.year + ": Cuti Diambil + GCR melebihi Jumlah Layak Cuti sebanyak " + fmt(r.excess) + " hari.");
   });
   return w;
 }
@@ -636,7 +649,7 @@ function buildReport() {
        '<div class="exp"><div class="pl">Cuti Luput ' + L.year + '</div><div class="pv">' + fmt(L[17]) + "<small>hari</small></div></div>" +
        '<div><div class="pl">Jumlah GCR sehingga ' + L.year + '</div><div class="pv">' + fmt(L.fc) + "<small>hari</small></div></div></div>";
   // ringkasan setiap tahun
-  h += "<h3>Ringkasan setiap tahun</h3><div class=\"tscroll\"><table class=\"rt\"><thead><tr><th>Tahun</th><th>Kelayakan</th><th>Baki Cuti Lepas</th><th>Jumlah Cuti</th><th>Jumlah Cuti Diambil</th><th>GCR</th><th>Jumlah GCR</th><th>Cuti Luput</th><th>Baki Cuti Ke Tahun Hadapan</th></tr></thead><tbody>";
+  h += "<h3>Ringkasan setiap tahun</h3><div class=\"tscroll\"><table class=\"rt\"><thead><tr><th>Tahun</th><th>Kelayakan</th><th>Baki Cuti Lepas</th><th>Jumlah Layak Cuti</th><th>Jumlah Cuti Diambil</th><th>GCR</th><th>Jumlah GCR</th><th>Cuti Luput</th><th>Baki Cuti Ke Tahun Hadapan</th></tr></thead><tbody>";
   res.forEach(function (r) {
     h += "<tr><th scope=\"row\">" + r.year + "</th><td>" + fmt(r[5]) + "</td><td>" + fmt(round2(r[3] + r[4])) + "</td><td>" + fmt(r[6]) + "</td><td>" + fmt(r[8]) + "</td><td>" + fmt(r[9]) + "</td><td>" + fmt(r.fc) + "</td><td>" + fmt(r[17]) + "</td><td>" + fmt(r.cf) + "</td></tr>";
   });
@@ -663,7 +676,30 @@ function buildReport() {
   h += "</tbody></table></div></div>";
   $("reportBody").innerHTML = h;
   $("repName").value = state.name;
+  watchDetail();
 }
+/* Mesej "putar telefon" muncul sekali apabila jadual terperinci masuk paparan (telefon menegak sahaja) */
+var hintObs = null, hintT = null, hintShown = false;
+function hideHint() { clearTimeout(hintT); $("rotateHint").classList.remove("show"); }
+function watchDetail() {
+  if (hintObs) { hintObs.disconnect(); hintObs = null; }
+  hideHint();
+  var el = document.querySelector("#reportBody .detailwrap .tscroll");
+  if (!el || !("IntersectionObserver" in window) || !window.matchMedia) return;
+  try { if (sessionStorage.getItem("kc-rot") === "1") hintShown = true; } catch (e) {}
+  if (hintShown) return;
+  hintObs = new IntersectionObserver(function (en) {
+    if (!en[0].isIntersecting) return;
+    if (!window.matchMedia("(orientation: portrait) and (max-width: 700px)").matches) return;
+    hintShown = true; try { sessionStorage.setItem("kc-rot", "1"); } catch (e) {}
+    hintObs.disconnect(); hintObs = null;
+    $("rotateHint").classList.add("show");
+    hintT = setTimeout(hideHint, 6000);
+  }, { threshold: 0.35 });
+  hintObs.observe(el);
+}
+window.addEventListener("orientationchange", hideHint);
+window.addEventListener("resize", function () { if (window.matchMedia && !window.matchMedia("(orientation: portrait)").matches) hideHint(); });
 function reportText() {
   var res = compute(state), L = res[res.length - 1], first = res[0], t = totals(res), carry = round2(L[18] + L[19]);
   var range = first.year === L.year ? String(L.year) : first.year + "-" + L.year;
@@ -674,7 +710,7 @@ function reportText() {
   o.push("Cuti Luput " + L.year + ": " + fmt(L[17]) + " hari");
   o.push("Jumlah GCR sehingga " + L.year + ": " + fmt(L.fc) + " hari", "", "Setiap tahun:");
   res.forEach(function (r) {
-    o.push(r.year + ": Kelayakan " + fmt(r[5]) + ", Baki Cuti Lepas " + fmt(round2(r[3] + r[4])) + ", Jumlah Cuti " + fmt(r[6]) +
+    o.push(r.year + ": Kelayakan " + fmt(r[5]) + ", Baki Cuti Lepas " + fmt(round2(r[3] + r[4])) + ", Jumlah Layak Cuti " + fmt(r[6]) +
       ", Jumlah Cuti Diambil " + fmt(r[8]) + ", GCR " + fmt(r[9]) + ", Jumlah GCR " + fmt(r.fc) + ", Cuti Luput " + fmt(r[17]) + ", Baki Cuti Ke Tahun Hadapan " + fmt(r.cf));
   });
   o.push("", "Jumlah " + range + ": Jumlah Cuti Diambil " + fmt(t.taken) + ", GCR " + fmt(t.fae) + ", Cuti Luput " + fmt(t.exp));
@@ -695,7 +731,7 @@ var reportPushed = false;
 function route() {
   var on = location.hash === "#laporan";
   $("editView").hidden = on; $("reportView").hidden = !on;
-  if (on) { buildReport(); window.scrollTo(0, 0); } else { reportPushed = false; }
+  if (on) { buildReport(); window.scrollTo(0, 0); } else { reportPushed = false; hideHint(); if (hintObs) { hintObs.disconnect(); hintObs = null; } }
 }
 window.addEventListener("hashchange", route);
 function openReportView() { reportPushed = true; location.hash = "laporan"; }
